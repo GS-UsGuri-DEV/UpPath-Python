@@ -95,7 +95,113 @@ def listar_usuarios():
 
 
 def atualizar_usuario():
-    pass
+    try:
+        usuarios = carregar_dados(ARQUIVO_USUARIOS)
+        if not usuarios:
+            print('Nenhum usuário cadastrado.')
+            return
+        listar_usuarios()
+        id_str = input('\nDigite o ID do usuário a atualizar: ').strip()
+        if not id_str.isdigit():
+            print('ID inválido.')
+            return
+        id_usuario = int(id_str)
+        usuario = next((u for u in usuarios if u['id'] == id_usuario), None)
+        if not usuario:
+            print('Usuário não encontrado.')
+            return
+
+        while True:
+            print('\n--- Atualizar Usuário ---')
+            print('1 - ID da empresa')
+            print('2 - Nome completo')
+            print('3 - Email')
+            print('4 - Senha')
+            print('5 - Nível de carreira')
+            print('6 - Ocupação')
+            print('7 - Gênero')
+            print('8 - Data de nascimento')
+            print('9 - Flag admin')
+            print('0 - Salvar e voltar')
+            escolha = input('Escolha opção: ').strip()
+
+            if escolha == '1':
+                novo = input(
+                    'Novo ID da empresa (vazio para remover vínculo): '
+                ).strip()
+                if novo == '':
+                    usuario['id_empresa'] = None
+                    print('Vínculo com empresa removido.')
+                elif not novo.isdigit():
+                    print('ID inválido.')
+                else:
+                    usuario['id_empresa'] = int(novo)
+                    print('ID da empresa atualizado.')
+            elif escolha == '2':
+                novo = input('Novo nome completo: ').strip()
+                if novo:
+                    usuario['nome_completo'] = novo
+                    print('Nome atualizado.')
+                else:
+                    print('Nenhuma alteração.')
+            elif escolha == '3':
+                novo = input('Novo email: ').strip()
+                if not novo or '@' not in novo:
+                    print('Email inválido.')
+                elif any(
+                    u.get('email') == novo and u['id'] != id_usuario for u in usuarios
+                ):
+                    print('Email já cadastrado.')
+                else:
+                    usuario['email'] = novo
+                    print('Email atualizado.')
+            elif escolha == '4':
+                novo = input('Nova senha: ').strip()
+                if novo:
+                    usuario['senha_hash'] = hashlib.sha256(
+                        novo.encode('utf-8')
+                    ).hexdigest()
+                    print('Senha atualizada.')
+                else:
+                    print('Nenhuma alteração na senha.')
+            elif escolha == '5':
+                novo = input('Novo nível de carreira: ').strip()
+                usuario['nivel_carreira'] = novo or usuario.get('nivel_carreira')
+                print('Nível de carreira atualizado.')
+            elif escolha == '6':
+                novo = input('Nova ocupação: ').strip()
+                usuario['ocupacao'] = novo or usuario.get('ocupacao')
+                print('Ocupação atualizada.')
+            elif escolha == '7':
+                novo = input('Novo gênero: ').strip()
+                usuario['genero'] = novo or usuario.get('genero')
+                print('Gênero atualizado.')
+            elif escolha == '8':
+                novo = input('Nova data de nascimento (YYYY-MM-DD): ').strip()
+                if novo:
+                    try:
+                        datetime.strptime(novo, '%Y-%m-%d')
+                        usuario['data_nascimento'] = novo
+                        print('Data de nascimento atualizada.')
+                    except Exception:
+                        print('Formato inválido. Use YYYY-MM-DD.')
+                else:
+                    print('Nenhuma alteração.')
+            elif escolha == '9':
+                novo = input('É administrador? (s/n): ').strip().lower()
+                if novo in ('s', 'n'):
+                    usuario['is_admin'] = 1 if novo == 's' else 0
+                    print('Flag admin atualizada.')
+                else:
+                    print('Entrada inválida.')
+            elif escolha == '0':
+                salvar_dados(ARQUIVO_USUARIOS, usuarios)
+                print('Alterações salvas.')
+                break
+            else:
+                print('Opção inválida.')
+    except Exception as e:
+        print('Erro ao atualizar usuário:', e)
 
 
 def deletar_usuario():
