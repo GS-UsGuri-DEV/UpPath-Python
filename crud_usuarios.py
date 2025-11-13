@@ -253,7 +253,7 @@ def buscar_usuario_por_id():
         if usuario:
             print('\nUsuário encontrado:')
             print(
-                f"ID: {usuario.get('id')} | Nome: {usuario.get('nome_completo')} | Email: {usuario.get('email')} | Empresa: {usuario.get('id_empresa')} | Cadastrado: {usuario.get('data_cadastro')}"
+                f'ID: {usuario.get("id")} | Nome: {usuario.get("nome_completo")} | Email: {usuario.get("email")} | Empresa: {usuario.get("id_empresa")} | Cadastrado: {usuario.get("data_cadastro")}'
             )
             return usuario
         else:
@@ -274,12 +274,14 @@ def buscar_usuario_por_nome():
         if not termo:
             print('Nome não pode ser vazio.')
             return []
-        encontrados = [u for u in usuarios if termo in u.get('nome_completo', '').lower()]
+        encontrados = [
+            u for u in usuarios if termo in u.get('nome_completo', '').lower()
+        ]
         if encontrados:
-            print(f"\n{len(encontrados)} usuário(s) encontrado(s):")
+            print(f'\n{len(encontrados)} usuário(s) encontrado(s):')
             for usuario in encontrados:
                 print(
-                    f"ID: {usuario.get('id')} | Nome: {usuario.get('nome_completo')} | Email: {usuario.get('email')} | Empresa: {usuario.get('id_empresa')}"
+                    f'ID: {usuario.get("id")} | Nome: {usuario.get("nome_completo")} | Email: {usuario.get("email")} | Empresa: {usuario.get("id_empresa")}'
                 )
             return encontrados
         else:
@@ -291,4 +293,22 @@ def buscar_usuario_por_nome():
 
 
 def exportar_usuarios_json():
-    pass
+    try:
+        import json
+
+        usuarios = carregar_dados(ARQUIVO_USUARIOS)
+        if not usuarios:
+            print('Nenhum usuário cadastrado.')
+            return
+        nome_arquivo = input(
+            'Digite o nome do arquivo para exportar (ex: usuarios.json): '
+        ).strip()
+        if not nome_arquivo:
+            nome_arquivo = 'usuarios_exportados.json'
+        if not nome_arquivo.endswith('.json'):
+            nome_arquivo += '.json'
+        with open(nome_arquivo, 'w', encoding='utf-8') as f:
+            json.dump(usuarios, f, ensure_ascii=False, indent=4)
+        print(f"Usuários exportados com sucesso para '{nome_arquivo}'")
+    except Exception as e:
+        print('Erro ao exportar usuários:', e)
