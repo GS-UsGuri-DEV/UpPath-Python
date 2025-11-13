@@ -205,7 +205,37 @@ def atualizar_usuario():
 
 
 def deletar_usuario():
-    pass
+    try:
+        usuarios = carregar_dados(ARQUIVO_USUARIOS)
+        if not usuarios:
+            print('Nenhum usuário cadastrado.')
+            return
+        listar_usuarios()
+        id_str = input('\nDigite o ID do usuário a remover: ').strip()
+        if not id_str.isdigit():
+            print('ID inválido.')
+            return
+        id_usuario = int(id_str)
+        usuario = next((u for u in usuarios if u['id'] == id_usuario), None)
+        if not usuario:
+            print('Usuário não encontrado.')
+            return
+        confirm = (
+            input(f"Confirma a exclusão de '{usuario.get('nome_completo')}'? (s/n): ")
+            .strip()
+            .lower()
+        )
+        if confirm == 's':
+            usuarios.remove(usuario)
+            # Reindexa IDs
+            for idx, u in enumerate(usuarios, start=1):
+                u['id'] = idx
+            salvar_dados(ARQUIVO_USUARIOS, usuarios)
+            print('Usuário removido com sucesso!')
+        else:
+            print('Exclusão cancelada.')
+    except Exception as e:
+        print('Erro ao deletar usuário:', e)
 
 
 def buscar_usuario_por_id():
