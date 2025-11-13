@@ -109,7 +109,26 @@ def deletar_empresa():
 
 
 def buscar_empresa_por_id():
-    pass
+    try:
+        empresas = carregar_dados(ARQUIVO_EMPRESAS)
+        if not empresas:
+            print("Nenhuma empresa cadastrada.")
+            return None
+        id_str = input("Digite o ID da empresa: ").strip()
+        if not id_str.isdigit():
+            print("ID inválido.")
+            return None
+        id_empresa = int(id_str)
+        empresa = next((e for e in empresas if e['id'] == id_empresa), None)
+        if empresa:
+            print(f"\nID: {empresa['id']} | Nome: {empresa['nome']} | CNPJ: {empresa['cnpj']}")
+            return empresa
+        else:
+            print("Empresa não encontrada.")
+            return None
+    except Exception as e:
+        print("Erro ao buscar empresa:", e)
+        return None
 
 
 def buscar_empresa_por_nome():
