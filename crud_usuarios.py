@@ -239,11 +239,55 @@ def deletar_usuario():
 
 
 def buscar_usuario_por_id():
-    pass
+    try:
+        usuarios = carregar_dados(ARQUIVO_USUARIOS)
+        if not usuarios:
+            print('Nenhum usuário cadastrado.')
+            return None
+        id_str = input('Digite o ID do usuário: ').strip()
+        if not id_str.isdigit():
+            print('ID inválido.')
+            return None
+        id_usuario = int(id_str)
+        usuario = next((u for u in usuarios if u['id'] == id_usuario), None)
+        if usuario:
+            print('\nUsuário encontrado:')
+            print(
+                f"ID: {usuario.get('id')} | Nome: {usuario.get('nome_completo')} | Email: {usuario.get('email')} | Empresa: {usuario.get('id_empresa')} | Cadastrado: {usuario.get('data_cadastro')}"
+            )
+            return usuario
+        else:
+            print('Usuário não encontrado.')
+            return None
+    except Exception as e:
+        print('Erro ao buscar usuário por ID:', e)
+        return None
 
 
 def buscar_usuario_por_nome():
-    pass
+    try:
+        usuarios = carregar_dados(ARQUIVO_USUARIOS)
+        if not usuarios:
+            print('Nenhum usuário cadastrado.')
+            return []
+        termo = input('Digite o nome (ou parte) do usuário: ').strip().lower()
+        if not termo:
+            print('Nome não pode ser vazio.')
+            return []
+        encontrados = [u for u in usuarios if termo in u.get('nome_completo', '').lower()]
+        if encontrados:
+            print(f"\n{len(encontrados)} usuário(s) encontrado(s):")
+            for usuario in encontrados:
+                print(
+                    f"ID: {usuario.get('id')} | Nome: {usuario.get('nome_completo')} | Email: {usuario.get('email')} | Empresa: {usuario.get('id_empresa')}"
+                )
+            return encontrados
+        else:
+            print('Nenhum usuário encontrado.')
+            return []
+    except Exception as e:
+        print('Erro ao buscar usuário por nome:', e)
+        return []
 
 
 def exportar_usuarios_json():
