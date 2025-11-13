@@ -79,7 +79,33 @@ def atualizar_empresa():
 
 
 def deletar_empresa():
-    pass
+    try:
+        empresas = carregar_dados(ARQUIVO_EMPRESAS)
+        if not empresas:
+            print("Nenhuma empresa cadastrada.")
+            return
+        listar_empresas()
+        id_str = input("\nDigite o ID da empresa a remover: ").strip()
+        if not id_str.isdigit():
+            print("ID inválido.")
+            return
+        id_empresa = int(id_str)
+        empresa = next((e for e in empresas if e['id'] == id_empresa), None)
+        if not empresa:
+            print("Empresa não encontrada.")
+            return
+        confirmacao = input(f"Confirma a exclusão de '{empresa['nome']}'? (s/n): ").strip().lower()
+        if confirmacao == 's':
+            empresas.remove(empresa)
+            # Reindexa os IDs para manter sequencialidade
+            for idx, e in enumerate(empresas, start=1):
+                e['id'] = idx
+            salvar_dados(ARQUIVO_EMPRESAS, empresas)
+            print("Empresa removida com sucesso!")
+        else:
+            print("Exclusão cancelada.")
+    except Exception as e:
+        print("Erro ao deletar empresa:", e)
 
 
 def buscar_empresa_por_id():
