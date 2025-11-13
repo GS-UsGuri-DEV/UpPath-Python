@@ -132,8 +132,43 @@ def buscar_empresa_por_id():
 
 
 def buscar_empresa_por_nome():
-    pass
+    try:
+        empresas = carregar_dados(ARQUIVO_EMPRESAS)
+        if not empresas:
+            print("Nenhuma empresa cadastrada.")
+            return []
+        nome = input("Digite o nome (ou parte) da empresa: ").strip().lower()
+        if not nome:
+            print("Nome não pode ser vazio.")
+            return []
+        encontradas = [e for e in empresas if nome in e['nome'].lower()]
+        if encontradas:
+            print(f"\n{len(encontradas)} empresa(s) encontrada(s):")
+            for empresa in encontradas:
+                print(f"ID: {empresa['id']} | Nome: {empresa['nome']} | CNPJ: {empresa['cnpj']}")
+            return encontradas
+        else:
+            print("Nenhuma empresa encontrada.")
+            return []
+    except Exception as e:
+        print("Erro ao buscar empresa:", e)
+        return []
 
 
 def exportar_empresas_json():
-    pass
+    try:
+        import json
+        empresas = carregar_dados(ARQUIVO_EMPRESAS)
+        if not empresas:
+            print("Nenhuma empresa cadastrada.")
+            return
+        nome_arquivo = input("Digite o nome do arquivo para exportar (ex: resultado.json): ").strip()
+        if not nome_arquivo:
+            nome_arquivo = "empresas_exportadas.json"
+        if not nome_arquivo.endswith('.json'):
+            nome_arquivo += '.json'
+        with open(nome_arquivo, 'w', encoding='utf-8') as f:
+            json.dump(empresas, f, ensure_ascii=False, indent=4)
+        print(f"Empresas exportadas com sucesso para '{nome_arquivo}'!")
+    except Exception as e:
+        print("Erro ao exportar empresas:", e)
