@@ -44,7 +44,38 @@ def listar_empresas():
 
 
 def atualizar_empresa():
-    pass
+    try:
+        empresas = carregar_dados(ARQUIVO_EMPRESAS)
+        if not empresas:
+            print("Nenhuma empresa cadastrada.")
+            return
+        listar_empresas()
+        id_str = input("\nDigite o ID da empresa a atualizar: ").strip()
+        if not id_str.isdigit():
+            print("ID inválido.")
+            return
+        id_empresa = int(id_str)
+        empresa = next((e for e in empresas if e['id'] == id_empresa), None)
+        if not empresa:
+            print("Empresa não encontrada.")
+            return
+        print(f"\nEmpresa atual: {empresa['nome']} | CNPJ: {empresa['cnpj']}")
+        nome = input("Novo nome (Enter para manter): ").strip()
+        if nome:
+            empresa['nome'] = nome
+        cnpj = input("Novo CNPJ (Enter para manter): ").strip()
+        if cnpj:
+            if not cnpj.isdigit() or len(cnpj) != 14:
+                print("CNPJ deve conter 14 dígitos numéricos.")
+                return
+            if any(e['cnpj'] == cnpj and e['id'] != id_empresa for e in empresas):
+                print("CNPJ já cadastrado.")
+                return
+            empresa['cnpj'] = cnpj
+        salvar_dados(ARQUIVO_EMPRESAS, empresas)
+        print("Empresa atualizada com sucesso!")
+    except Exception as e:
+        print("Erro ao atualizar empresa:", e)
 
 
 def deletar_empresa():
