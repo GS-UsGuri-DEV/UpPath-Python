@@ -6,15 +6,17 @@ Inicializa o banco de dados e pool de conexões antes de exibir o menu.
 """
 
 import logging
-import sys
 from pathlib import Path
+
+# Carrega variáveis de ambiente do arquivo .env ANTES de importar módulos
+from dotenv import load_dotenv
+
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
+# Agora importa os módulos que dependem das variáveis de ambiente
 from services import storage_oracle as db
 from ui import crud_usuarios
-
-# Adiciona o diretório src ao path
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
-
-
 
 
 def main():
