@@ -1,5 +1,7 @@
-# storage.py
-# Funções para carregar e salvar dados em JSON
+"""
+Persistência local (JSON) para usuários.
+"""
+
 import json
 import os
 

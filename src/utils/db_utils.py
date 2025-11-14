@@ -1,6 +1,4 @@
 """
-db_utils.py
-
 Utilitários para gerenciamento de banco de dados.
 """
 

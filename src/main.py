@@ -5,7 +5,6 @@ Ponto de entrada principal do sistema UpPath CRUD.
 Inicializa o banco de dados e pool de conexões antes de exibir o menu.
 """
 
-import logging
 from pathlib import Path
 
 # Carrega variáveis de ambiente do arquivo .env ANTES de importar módulos
@@ -31,13 +30,7 @@ def main():
         db.init_table()
         print('✓ Banco de dados inicializado com sucesso!')
 
-        # Opcional: inicializar pool de conexões para melhor performance
-        try:
-            db.init_pool(min_connections=2, max_connections=5)
-            print('✓ Pool de conexões inicializado!')
-        except Exception as e:
-            logging.warning(f'Pool de conexões não disponível: {e}')
-            print('⚠ Operando sem pool de conexões (modo direto).')
+        # Operando sem pool de conexões (conexões diretas)
 
     except Exception as e:
         print(f'\n✗ Erro ao inicializar banco de dados: {e}')
@@ -74,10 +67,11 @@ def main():
             crud_usuarios.deletar_usuario()
         elif opcao == '0':
             print('\nEncerrando sistema...')
-            print('Até logo!')
-            break
-        else:
-            print('\n✗ Opção inválida. Tente novamente.')
+            """
+            main.py
+
+            Ponto de entrada principal do sistema UpPath CRUD.
+            """
 
 
 if __name__ == '__main__':

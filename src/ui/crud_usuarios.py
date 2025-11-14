@@ -1,8 +1,5 @@
 """
-crud_usuarios.py
-
 Interface de usuário para operações CRUD de usuários.
-Refatorado para máxima reutilização e organização.
 """
 
 import hashlib
@@ -343,8 +340,13 @@ def atualizar_usuario():
                 # Atualizar data de nascimento (DD/MM/YYYY)
                 while True:
                     novo_input = input_date_mask(
-                        'Nova data de nascimento (DD/MM/YYYY, vazio para remover): '
+                        'Nova data de nascimento (DD/MM/YYYY, vazio para manter): '
                     ).strip()
+                    # Se vazio, mantém o valor atual (não atualiza para NULL)
+                    if novo_input == '':
+                        print('✓ Data mantida.')
+                        break
+
                     novo_val, novo_err = validate_date(novo_input, required=False)
                     if novo_err:
                         print(f'✗ {novo_err}')

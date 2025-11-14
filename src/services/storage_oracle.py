@@ -1,17 +1,5 @@
 """
-storage_oracle.py
-
-Camada leve para sincronizar `usuarios.json` com um banco Oracle e executar
-consultas. Usa o driver `oracledb` (ou `cx_Oracle` compatível). Este módulo
-é opcional — se não estiver instalado, o código chamador deve tratar a
-ausência.
-
-Configuração de conexão (válida se não passar `conn_info`):
-- Variáveis de ambiente: ORACLE_USER, ORACLE_PASSWORD, ORACLE_DSN
-
-Observação: operações de escrita (sync) recriam os registros na tabela
-`usuarios`. A criação da tabela é tentada e erros são ignorados quando a
-tabela já existe.
+Camada para sincronizar usuários com banco Oracle e executar consultas.
 """
 
 import logging
@@ -24,64 +12,21 @@ try:
 except ImportError:
     oracledb = None
 
-# Pool de conexões global (opcional)
-_connection_pool = None
-
 logging.basicConfig(
     level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
 
-def init_pool(
-    min_connections: int = 2, max_connections: int = 10, conn_info: Dict = None
-):
-    """Inicializa pool de conexões para melhor performance."""
-    global _connection_pool
-    if oracledb is None:
-        raise ModuleNotFoundError('oracledb não encontrado')
-    if _connection_pool is not None:
-        logging.info('Pool de conexões já inicializado.')
-        return
-
-    if conn_info is None:
-        user = os.getenv('ORACLE_USER')
-        password = os.getenv('ORACLE_PASSWORD')
-        dsn = os.getenv('ORACLE_DSN')
-    else:
-        user = conn_info.get('user')
-        password = conn_info.get('password')
-        dsn = conn_info.get('dsn')
-
-    if not (user and password and dsn):
-        raise ValueError('Informação de conexão Oracle incompleta')
-
-    try:
-        _connection_pool = oracledb.create_pool(
-            user=user,
-            password=password,
-            dsn=dsn,
-            min=min_connections,
-            max=max_connections,
-        )
-        logging.info(
-            f'Pool de conexões criado (min={min_connections}, max={max_connections})'
-        )
-    except Exception as e:
-        logging.error(f'Erro ao criar pool de conexões: {e}')
-        raise
-
-
 def _connect(conn_info: Dict = None):
-    """Obtém conexão do pool (se disponível) ou cria conexão direta."""
-    global _connection_pool
+    """Cria e retorna uma conexão direta com o banco Oracle.
+
+    Nota: o suporte a pool foi removido para simplificar o uso em ambientes
+    onde o pool não é necessário. Quem usar esta função deve fechar a
+    conexão com `conn.close()` quando terminar.
+    """
     if oracledb is None:
         raise ModuleNotFoundError('oracledb não encontrado')
 
-    # Usa pool se disponível
-    if _connection_pool is not None:
-        return _connection_pool.acquire()
-
-    # Conexão direta
     if conn_info is None:
         user = os.getenv('ORACLE_USER')
         password = os.getenv('ORACLE_PASSWORD')
@@ -90,8 +35,10 @@ def _connect(conn_info: Dict = None):
         user = conn_info.get('user')
         password = conn_info.get('password')
         dsn = conn_info.get('dsn')
+
     if not (user and password and dsn):
         raise ValueError('Informação de conexão Oracle incompleta')
+
     return oracledb.connect(user=user, password=password, dsn=dsn)
 
 
@@ -212,7 +159,7 @@ def insert_usuario(usuario: Dict, conn_info: Dict = None) -> int:
     if not usuario.get('genero'):
         usuario['genero'] = 'Não especificado'
 
-    # Defensive: id_empresa must be int or None
+    # id_empresa deve ser int ou None
     id_empresa = usuario.get('id_empresa')
     if id_empresa in ('', None):
         id_empresa = None
@@ -223,7 +170,7 @@ def insert_usuario(usuario: Dict, conn_info: Dict = None) -> int:
             id_empresa = None
     usuario['id_empresa'] = id_empresa
 
-    # Defensive: is_admin must be int (0 or 1)
+    # is_admin deve ser int (0 ou 1)
     is_admin = usuario.get('is_admin')
     if is_admin in ('', None):
         is_admin = 0
