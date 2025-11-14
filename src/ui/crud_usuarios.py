@@ -6,10 +6,9 @@ Refatorado para máxima reutilização e organização.
 """
 
 import hashlib
-
-import storage_oracle as db
-from db_utils import format_usuario_display
-from validators import (
+from services import storage_oracle as db
+from utils.db_utils import format_usuario_display
+from utils.validators import (
     MAX_GENERO,
     MAX_NIVEL_CARREIRA,
     MAX_NOME_COMPLETO,

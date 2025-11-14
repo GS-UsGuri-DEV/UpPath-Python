@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
-import storage_oracle as db
+from services import storage_oracle as db
 
 
 @contextmanager

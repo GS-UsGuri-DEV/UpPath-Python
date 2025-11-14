@@ -1,4 +1,4 @@
-from storage import carregar_dados, salvar_dados
+from src.services.storage import carregar_dados, salvar_dados
 
 ARQUIVO_EMPRESAS = 'empresas.json'
 
