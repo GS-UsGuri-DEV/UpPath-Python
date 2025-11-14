@@ -17,7 +17,8 @@ MAX_GENERO = 15
 MAX_CNPJ = 18
 
 EMAIL_PATTERN = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-DATE_FORMAT = '%Y-%m-%d'
+DATE_FORMAT = '%d/%m/%Y'
+DATE_FORMAT_ISO = '%Y-%m-%d'
 
 
 class ValidationError(Exception):
@@ -26,19 +27,22 @@ class ValidationError(Exception):
     pass
 
 
-def validate_email(email: str) -> Tuple[bool, Optional[str]]:
+def validate_email(email: str) -> Tuple[Optional[str], Optional[str]]:
     """Valida formato e tamanho de email.
 
     Returns:
-        (is_valid, error_message)
+        (validated_email, error_message)
     """
-    if not email:
-        return False, 'Email não pode ser vazio'
+    if not email or not email.strip():
+        return None, 'Email não pode ser vazio'
+
+    email = email.strip()
+
     if len(email) > MAX_EMAIL:
-        return False, f'Email muito longo (máximo {MAX_EMAIL} caracteres)'
+        return None, f'Email muito longo (máximo {MAX_EMAIL} caracteres)'
     if not re.match(EMAIL_PATTERN, email):
-        return False, 'Formato de email inválido'
-    return True, None
+        return None, 'Formato de email inválido'
+    return email, None
 
 
 def validate_string_field(
@@ -70,6 +74,8 @@ def validate_date(
 ) -> Tuple[Optional[date], Optional[str]]:
     """Valida e converte string de data.
 
+    Aceita por padrão o formato BR `DD/MM/YYYY`. Também aceita `YYYY-MM-DD`.
+
     Returns:
         (date_object, error_message)
     """
@@ -78,10 +84,18 @@ def validate_date(
             return None, 'Data é obrigatória'
         return None, None
 
+    s = date_str.strip()
+    # Tenta formato BR primeiro
     try:
-        return datetime.strptime(date_str, DATE_FORMAT).date(), None
+        return datetime.strptime(s, DATE_FORMAT).date(), None
     except ValueError:
-        return None, f'Data inválida. Use o formato {DATE_FORMAT}'
+        pass
+
+    # Tenta formato ISO
+    try:
+        return datetime.strptime(s, DATE_FORMAT_ISO).date(), None
+    except ValueError:
+        return None, f'Data inválida. Use o formato {DATE_FORMAT} (ex: 31/12/1990)'
 
 
 def validate_id(
@@ -128,3 +142,61 @@ def sanitize_for_db(value: str, max_length: int) -> str:
     # Remove espaços extras e limita tamanho
     sanitized = value.strip()[:max_length]
     return sanitized
+
+
+def input_date_mask(prompt: str) -> str:
+    """Lê uma data do usuário no formato DD/MM/YYYY com máscara de barras.
+
+    Implementação leve compatível com Windows (usa `msvcrt`) e fallback
+    para `input()` em outros sistemas.
+
+    Retorna: string digitada (ex: '16/12/2002') ou '' se Enter sem digitar.
+    """
+    try:
+        import msvcrt
+    except Exception:
+        return input(prompt)
+
+    sys_stdout = __import__('sys').stdout
+
+    buf = []
+    positions = [2, 5]
+
+    sys_stdout.write(prompt)
+    sys_stdout.flush()
+
+    while True:
+        ch = msvcrt.getwch()
+        if ch in ('\r', '\n'):
+            sys_stdout.write('\n')
+            return ''.join(buf)
+
+        if ch in ('\x08',):
+            if buf:
+                buf.pop()
+                if buf and len(buf) in positions and buf[-1] == '/':
+                    buf.pop()
+            sys_stdout.write('\r' + ' ' * (len(prompt) + 12) + '\r')
+            sys_stdout.write(prompt + ''.join(buf))
+            sys_stdout.flush()
+            continue
+
+        if not ch.isdigit():
+            continue
+
+        digits_only = [c for c in buf if c != '/']
+        if len(digits_only) >= 8:
+            continue
+
+        digits_only.append(ch)
+        new_buf = []
+        for i, d in enumerate(digits_only):
+            new_buf.append(d)
+            if i + 1 in (2, 4) and i + 1 != len(digits_only):
+                new_buf.append('/')
+
+        buf = new_buf
+
+        sys_stdout.write('\r' + ' ' * (len(prompt) + 12) + '\r')
+        sys_stdout.write(prompt + ''.join(buf))
+        sys_stdout.flush()

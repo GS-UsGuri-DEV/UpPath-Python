@@ -110,7 +110,7 @@ def init_table(conn_info: Dict = None):
                     nome_empresa VARCHAR2(60) NOT NULL,
                     cnpj VARCHAR2(18) NOT NULL,
                     email_contato VARCHAR2(60) NOT NULL,
-                    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT (SYSTIMESTAMP AT TIME ZONE ''America/Sao_Paulo'') NOT NULL,
+                    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
                     CONSTRAINT empresas_PK PRIMARY KEY (id_empresa),
                     CONSTRAINT empresas_cnpj_uk UNIQUE (cnpj),
                     CONSTRAINT empresas_email_uk UNIQUE (email_contato)
@@ -140,7 +140,7 @@ def init_table(conn_info: Dict = None):
                     ocupacao VARCHAR2(30) NOT NULL,
                     genero VARCHAR2(15) NOT NULL,
                     data_nascimento DATE,
-                    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT (SYSTIMESTAMP AT TIME ZONE ''America/Sao_Paulo'') NOT NULL,
+                    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
                     is_admin NUMBER(1) DEFAULT 0 NOT NULL,
                     CONSTRAINT usuarios_PK PRIMARY KEY (id_usuario),
                     CONSTRAINT usuarios_email_uk UNIQUE (email),
@@ -212,13 +212,34 @@ def insert_usuario(usuario: Dict, conn_info: Dict = None) -> int:
     if not usuario.get('genero'):
         usuario['genero'] = 'Não especificado'
 
+    # Defensive: id_empresa must be int or None
+    id_empresa = usuario.get('id_empresa')
+    if id_empresa in ('', None):
+        id_empresa = None
+    elif not isinstance(id_empresa, int):
+        try:
+            id_empresa = int(id_empresa)
+        except Exception:
+            id_empresa = None
+    usuario['id_empresa'] = id_empresa
+
+    # Defensive: is_admin must be int (0 or 1)
+    is_admin = usuario.get('is_admin')
+    if is_admin in ('', None):
+        is_admin = 0
+    elif not isinstance(is_admin, int):
+        try:
+            is_admin = int(is_admin)
+        except Exception:
+            is_admin = 0
+    usuario['is_admin'] = is_admin
+
     conn = _connect(conn_info)
     cur = conn.cursor()
     try:
         try:
             cur.execute('SELECT usuarios_seq.NEXTVAL FROM dual')
             next_id = cur.fetchone()[0]
-            logging.debug(f'ID gerado via sequence: {next_id}')
         except Exception as e:
             logging.warning(f'Sequence não disponível, usando MAX+1: {e}')
             cur.execute('SELECT NVL(MAX(id_usuario),0) + 1 FROM usuarios')
@@ -226,10 +247,13 @@ def insert_usuario(usuario: Dict, conn_info: Dict = None) -> int:
 
         dn = usuario.get('data_nascimento')
         if isinstance(dn, str):
-            try:
-                dn_val = datetime.strptime(dn, '%Y-%m-%d').date()
-            except Exception:
-                dn_val = None
+            dn_val = None
+            for fmt in ('%Y-%m-%d', '%d/%m/%Y'):
+                try:
+                    dn_val = datetime.strptime(dn, fmt).date()
+                    break
+                except Exception:
+                    continue
         else:
             dn_val = dn
 
@@ -285,7 +309,17 @@ def get_usuario_por_id(id_usuario: int, conn_info: Dict = None) -> Optional[Dict
     conn = _connect(conn_info)
     cur = conn.cursor()
     try:
-        cur.execute('SELECT * FROM usuarios WHERE id_usuario = :1', (id_usuario,))
+        cur.execute(
+            """
+            SELECT id_usuario, id_empresa, nome_completo, email, senha_hash,
+                   nivel_carreira, ocupacao, genero, data_nascimento,
+                   TO_CHAR(data_cadastro, 'YYYY-MM-DD"T"HH24:MI:SS TZH:TZM') AS data_cadastro,
+                   is_admin
+            FROM usuarios
+            WHERE id_usuario = :1
+            """,
+            (id_usuario,),
+        )
         rows = _rows_to_dicts(cur)
         return rows[0] if rows else None
     finally:
@@ -298,7 +332,16 @@ def list_usuarios(conn_info: Dict = None) -> List[Dict]:
     conn = _connect(conn_info)
     cur = conn.cursor()
     try:
-        cur.execute('SELECT * FROM usuarios ORDER BY id_usuario')
+        cur.execute(
+            """
+            SELECT id_usuario, id_empresa, nome_completo, email, senha_hash,
+                   nivel_carreira, ocupacao, genero, data_nascimento,
+                   TO_CHAR(data_cadastro, 'YYYY-MM-DD"T"HH24:MI:SS TZH:TZM') AS data_cadastro,
+                   is_admin
+            FROM usuarios
+            ORDER BY id_usuario
+            """
+        )
         return _rows_to_dicts(cur)
     finally:
         cur.close()
@@ -320,10 +363,13 @@ def update_usuario(id_usuario: int, usuario: Dict, conn_info: Dict = None) -> No
     try:
         dn = usuario.get('data_nascimento')
         if isinstance(dn, str):
-            try:
-                dn_val = datetime.strptime(dn, '%Y-%m-%d').date()
-            except Exception:
-                dn_val = None
+            dn_val = None
+            for fmt in ('%Y-%m-%d', '%d/%m/%Y'):
+                try:
+                    dn_val = datetime.strptime(dn, fmt).date()
+                    break
+                except Exception:
+                    continue
         else:
             dn_val = dn
         cur.execute(

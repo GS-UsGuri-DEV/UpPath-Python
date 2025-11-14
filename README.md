@@ -18,7 +18,7 @@ Sistema Python CRUD completo para gerenciamento de usuários com Oracle Database
 
 - Python 3.8+
 - Oracle Database (11g ou superior)
-- Driver Oracle: `oracledb` ou `cx_Oracle`
+- Driver Oracle: `oracledb`
 
 ## 🔧 Instalação
 

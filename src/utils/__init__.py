@@ -1,1 +1,4 @@
-"""Módulo de utilitários."""
+"""Módulo de utilitários.
+
+Contém helpers exportados para o pacote `utils`.
+"""

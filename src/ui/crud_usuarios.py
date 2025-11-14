@@ -14,6 +14,7 @@ from utils.validators import (
     MAX_NIVEL_CARREIRA,
     MAX_NOME_COMPLETO,
     MAX_OCUPACAO,
+    input_date_mask,
     validate_boolean_input,
     validate_date,
     validate_email,
@@ -56,7 +57,9 @@ def criar_usuario():
 
         # ID da empresa (opcional)
         id_empresa_str = input('ID da empresa (opcional, Enter para pular): ').strip()
-        id_empresa, _ = validate_id(id_empresa_str, 'ID da empresa')
+        id_empresa, id_empresa_error = validate_id(id_empresa_str, 'ID da empresa')
+        if id_empresa_error or id_empresa is None:
+            id_empresa = None
 
         # Nome completo
         nome_completo, success = _input_with_validation(
@@ -116,10 +119,17 @@ def criar_usuario():
             default='Não especificado',
         )
 
-        # Data de nascimento
-        data_nascimento, _ = _input_with_validation(
-            'Data de nascimento (YYYY-MM-DD, opcional): ', validate_date, required=False
-        )
+        # Data de nascimento (mascara BR DD/MM/YYYY)
+        while True:
+            dn_input = input_date_mask(
+                'Data de nascimento (DD/MM/YYYY, opcional): '
+            ).strip()
+            dn_val, dn_err = validate_date(dn_input, required=False)
+            if dn_err:
+                print(f'✗ {dn_err}')
+                continue
+            data_nascimento = dn_val
+            break
 
         # Administrador
         is_admin_input = input('É administrador? (s/n) [n]: ').strip()
@@ -330,14 +340,18 @@ def atualizar_usuario():
                 print('✓ Gênero atualizado.')
 
             elif escolha == '8':
-                novo, success = _input_with_validation(
-                    'Nova data de nascimento (YYYY-MM-DD): ',
-                    validate_date,
-                    required=False,
-                )
-                if success:
-                    usuario['data_nascimento'] = novo
+                # Atualizar data de nascimento (DD/MM/YYYY)
+                while True:
+                    novo_input = input_date_mask(
+                        'Nova data de nascimento (DD/MM/YYYY, vazio para remover): '
+                    ).strip()
+                    novo_val, novo_err = validate_date(novo_input, required=False)
+                    if novo_err:
+                        print(f'✗ {novo_err}')
+                        continue
+                    usuario['data_nascimento'] = novo_val
                     print('✓ Data atualizada.')
+                    break
 
             elif escolha == '9':
                 novo_admin = input('É administrador? (s/n): ').strip()
