@@ -6,6 +6,7 @@ Refatorado para máxima reutilização e organização.
 """
 
 import hashlib
+
 from services import storage_oracle as db
 from utils.db_utils import format_usuario_display
 from utils.validators import (

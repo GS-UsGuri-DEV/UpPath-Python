@@ -5,15 +5,15 @@ Ponto de entrada principal do sistema UpPath CRUD.
 Inicializa o banco de dados e pool de conexões antes de exibir o menu.
 """
 
-import sys
 import logging
+import sys
 from pathlib import Path
 
 # Adiciona o diretório src ao path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
-from ui import crud_usuarios
 from services import storage_oracle as db
+from ui import crud_usuarios
 
 
 def main():
