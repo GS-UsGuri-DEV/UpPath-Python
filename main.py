@@ -72,10 +72,5 @@ def main():
             print('\n✗ Opção inválida. Tente novamente.')
 
 
-def buscar_usuario_por_id():
-    """DEPRECATED: Função movida para crud_usuarios.py"""
-    crud_usuarios.buscar_usuario_por_id()
-
-
 if __name__ == '__main__':
     main()
