@@ -342,17 +342,22 @@ def atualizar_usuario():
                     novo_input = input_date_mask(
                         'Nova data de nascimento (DD/MM/YYYY, vazio para manter): '
                     ).strip()
-                    # Se vazio, mantém o valor atual (não atualiza para NULL)
+                    # Se vazio, mantém o valor atual 
                     if novo_input == '':
                         print('✓ Data mantida.')
                         break
 
-                    novo_val, novo_err = validate_date(novo_input, required=False)
+                    novo_val, novo_err = validate_date(novo_input, required=True)
                     if novo_err:
                         print(f'✗ {novo_err}')
                         continue
-                    usuario['data_nascimento'] = novo_val
-                    print('✓ Data atualizada.')
+                    
+                    if novo_val is not None:
+                        usuario['data_nascimento'] = novo_val
+                        print('✓ Data atualizada.')
+                    else:
+                        print('✗ Data de nascimento é obrigatória.')
+                        continue
                     break
 
             elif escolha == '9':
