@@ -18,28 +18,6 @@ from services import storage_oracle as db
 from ui import crud_usuarios
 
 
-def querries():    
-    """Função para exibir querries disponíveis."""
-    print('\n' + '=' * 60)
-    print('QUERRIES DISPONÍVEIS')
-    print('=' * 60)
-    print('1 - Listar usuários por faixa etária')
-    print('2 - Contar usuários por Genero')
-    print('3 - Listar usuários criados em um período específico')
-    print('0 - Voltar ao menu principal')
-    print('=' * 60)
-
-    opcao = input('Escolha uma opção de querry: ').strip()
-
-    if opcao == '1':
-        crud_usuarios.listar_usuarios_faixa_etaria()
-    elif opcao == '2':
-        crud_usuarios.contar_usuarios_genero()
-    elif opcao == '3':
-        crud_usuarios.listar_usuarios_periodo_criacao()
-    elif opcao == '0':
-        return
-
 def main():
     """Função principal que inicializa o sistema e exibe o menu."""
     print('=' * 60)
