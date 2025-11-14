@@ -1,14 +1,19 @@
 import hashlib
-from datetime import date, datetime
+import re
+from datetime import datetime
+import storage_oracle as db
 
-from storage import carregar_dados, salvar_dados
-
-ARQUIVO_USUARIOS = 'usuarios.json'
 
 
 def criar_usuario():
     try:
-        usuarios = carregar_dados(ARQUIVO_USUARIOS)
+        if db is None:
+            print(
+                'Adaptador Oracle não disponível. Instale/configure o driver e o módulo storage_oracle.'
+            )
+            return
+
+        db.init_table()
 
         id_empresa = input('ID da empresa (opcional, Enter para nenhum): ').strip()
         if id_empresa and not id_empresa.isdigit():
@@ -22,10 +27,11 @@ def criar_usuario():
             return
 
         email = input('Digite o email: ').strip()
-        if not email or '@' not in email:
+        if not is_valid_email(email):
             print('Email inválido.')
             return
-        if any(u.get('email') == email for u in usuarios):
+
+        if db.email_existe(email):
             print('Email já cadastrado.')
             return
 
@@ -36,30 +42,25 @@ def criar_usuario():
         senha_hash = hashlib.sha256(senha.encode('utf-8')).hexdigest()
 
         nivel_carreira = (
-            input('Nível de carreira (ex: Júnior/Pleno/Sênior) [opcional]: ').strip()
-            or None
+            input('Nível de carreira (ex: Júnior/Pleno/Sênior): ').strip() or ''
         )
-        ocupacao = input('Ocupação (cargo) [opcional]: ').strip() or None
-        genero = input('Gênero [opcional]: ').strip() or None
+        ocupacao = input('Ocupação (cargo): ').strip() or ''
+        genero = input('Gênero: ').strip() or ''
 
-        data_nascimento = input('Data de nascimento (YYYY-MM-DD) [opcional]: ').strip()
+        data_nascimento = input('Data de nascimento (YYYY-MM-DD): ').strip()
         if data_nascimento:
             try:
-                # valida formato
-                datetime.strptime(data_nascimento, '%Y-%m-%d')
+                dn_val = datetime.strptime(data_nascimento, '%Y-%m-%d').date()
             except Exception:
                 print('Data de nascimento inválida. Use YYYY-MM-DD.')
                 return
         else:
-            data_nascimento = None
-
-        data_cadastro = date.today().isoformat()
+            dn_val = None
 
         is_admin_input = input('É administrador? (s/n) [n]: ').strip().lower() or 'n'
         is_admin = 1 if is_admin_input == 's' else 0
 
         usuario = {
-            'id': len(usuarios) + 1,
             'id_empresa': id_empresa,
             'nome_completo': nome_completo,
             'email': email,
@@ -67,46 +68,61 @@ def criar_usuario():
             'nivel_carreira': nivel_carreira,
             'ocupacao': ocupacao,
             'genero': genero,
-            'data_nascimento': data_nascimento,
-            'data_cadastro': data_cadastro,
+            'data_nascimento': dn_val,
             'is_admin': is_admin,
         }
 
-        usuarios.append(usuario)
-        salvar_dados(ARQUIVO_USUARIOS, usuarios)
-        print('Usuário cadastrado com sucesso!')
+        try:
+            new_id = db.insert_usuario(usuario)
+            print(f'Usuário cadastrado com sucesso! (Oracle) id={new_id}')
+        except Exception as e:
+            print('Erro ao inserir usuário no Oracle:', e)
     except Exception as e:
         print('Erro ao cadastrar usuário:', e)
 
 
 def listar_usuarios():
     try:
-        usuarios = carregar_dados(ARQUIVO_USUARIOS)
+        if db is None:
+            print('Adaptador Oracle não disponível.')
+            return
+        db.init_table()
+        usuarios = db.list_usuarios()
+
         if not usuarios:
             print('Nenhum usuário cadastrado.')
             return
         print('\nLista de Usuários:')
         for usuario in usuarios:
             print(
-                f'ID: {usuario.get("id")} | Nome: {usuario.get("nome_completo")} | Email: {usuario.get("email")} | Empresa: {usuario.get("id_empresa")} | Nivel: {usuario.get("nivel_carreira")} | Ocupacao: {usuario.get("ocupacao")} | Genero: {usuario.get("genero")} | Nasc: {usuario.get("data_nascimento")} | Cadastrado: {usuario.get("data_cadastro")} | Admin: {usuario.get("is_admin")}'
+                f'ID: {usuario.get("id_usuario")} | Nome: {usuario.get("nome_completo")} | Email: {usuario.get("email")} | Empresa: {usuario.get("id_empresa")} | Nivel: {usuario.get("nivel_carreira")} | Ocupacao: {usuario.get("ocupacao")} | Genero: {usuario.get("genero")} | Nasc: {usuario.get("data_nascimento")} | Cadastrado: {usuario.get("data_cadastro")} | Admin: {usuario.get("is_admin")}'
             )
     except Exception as e:
         print('Erro ao listar usuários:', e)
 
 
+def is_valid_email(email: str) -> bool:
+    """Validação simples de e-mail usando regex."""
+    if not email:
+        return False
+    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    return re.match(pattern, email) is not None
+
+
 def atualizar_usuario():
     try:
-        usuarios = carregar_dados(ARQUIVO_USUARIOS)
-        if not usuarios:
-            print('Nenhum usuário cadastrado.')
+        if db is None:
+            print('Adaptador Oracle não disponível.')
             return
+        db.init_table()
         listar_usuarios()
         id_str = input('\nDigite o ID do usuário a atualizar: ').strip()
         if not id_str.isdigit():
             print('ID inválido.')
             return
         id_usuario = int(id_str)
-        usuario = next((u for u in usuarios if u['id'] == id_usuario), None)
+        usuario = db.get_usuario_por_id(id_usuario)
+
         if not usuario:
             print('Usuário não encontrado.')
             return
@@ -146,15 +162,15 @@ def atualizar_usuario():
                     print('Nenhuma alteração.')
             elif escolha == '3':
                 novo = input('Novo email: ').strip()
-                if not novo or '@' not in novo:
+                if not is_valid_email(novo):
                     print('Email inválido.')
-                elif any(
-                    u.get('email') == novo and u['id'] != id_usuario for u in usuarios
-                ):
-                    print('Email já cadastrado.')
                 else:
-                    usuario['email'] = novo
-                    print('Email atualizado.')
+                    # checa duplicidade
+                    if db.email_existe(novo, exclude_id=id_usuario):
+                        print('Email já cadastrado.')
+                    else:
+                        usuario['email'] = novo
+                        print('Email atualizado.')
             elif escolha == '4':
                 novo = input('Nova senha: ').strip()
                 if novo:
@@ -195,9 +211,14 @@ def atualizar_usuario():
                 else:
                     print('Entrada inválida.')
             elif escolha == '0':
-                salvar_dados(ARQUIVO_USUARIOS, usuarios)
-                print('Alterações salvas.')
-                break
+                # aplica alterações no banco via API
+                try:
+                    db.update_usuario(id_usuario, usuario)
+                    print('Alterações salvas (Oracle).')
+                    break
+                except Exception as e:
+                    print('Erro ao atualizar usuário no Oracle:', e)
+                    break
             else:
                 print('Opção inválida.')
     except Exception as e:
@@ -206,9 +227,8 @@ def atualizar_usuario():
 
 def deletar_usuario():
     try:
-        usuarios = carregar_dados(ARQUIVO_USUARIOS)
-        if not usuarios:
-            print('Nenhum usuário cadastrado.')
+        if db is None:
+            print('Adaptador Oracle não disponível.')
             return
         listar_usuarios()
         id_str = input('\nDigite o ID do usuário a remover: ').strip()
@@ -216,99 +236,21 @@ def deletar_usuario():
             print('ID inválido.')
             return
         id_usuario = int(id_str)
-        usuario = next((u for u in usuarios if u['id'] == id_usuario), None)
-        if not usuario:
+        # busca nome para confirmação
+        u = db.get_usuario_por_id(id_usuario)
+        if not u:
             print('Usuário não encontrado.')
             return
-        confirm = (
-            input(f"Confirma a exclusão de '{usuario.get('nome_completo')}'? (s/n): ")
-            .strip()
-            .lower()
-        )
+        nome = u.get('nome_completo')
+
+        confirm = input(f"Confirma a exclusão de '{nome}'? (s/n): ").strip().lower()
         if confirm == 's':
-            usuarios.remove(usuario)
-            # Reindexa IDs
-            for idx, u in enumerate(usuarios, start=1):
-                u['id'] = idx
-            salvar_dados(ARQUIVO_USUARIOS, usuarios)
-            print('Usuário removido com sucesso!')
+            try:
+                db.delete_usuario(id_usuario)
+                print('Usuário removido com sucesso! (Oracle)')
+            except Exception as e:
+                print('Erro ao remover usuário no Oracle:', e)
         else:
             print('Exclusão cancelada.')
     except Exception as e:
         print('Erro ao deletar usuário:', e)
-
-
-def buscar_usuario_por_id():
-    try:
-        usuarios = carregar_dados(ARQUIVO_USUARIOS)
-        if not usuarios:
-            print('Nenhum usuário cadastrado.')
-            return None
-        id_str = input('Digite o ID do usuário: ').strip()
-        if not id_str.isdigit():
-            print('ID inválido.')
-            return None
-        id_usuario = int(id_str)
-        usuario = next((u for u in usuarios if u['id'] == id_usuario), None)
-        if usuario:
-            print('\nUsuário encontrado:')
-            print(
-                f'ID: {usuario.get("id")} | Nome: {usuario.get("nome_completo")} | Email: {usuario.get("email")} | Empresa: {usuario.get("id_empresa")} | Cadastrado: {usuario.get("data_cadastro")}'
-            )
-            return usuario
-        else:
-            print('Usuário não encontrado.')
-            return None
-    except Exception as e:
-        print('Erro ao buscar usuário por ID:', e)
-        return None
-
-
-def buscar_usuario_por_nome():
-    try:
-        usuarios = carregar_dados(ARQUIVO_USUARIOS)
-        if not usuarios:
-            print('Nenhum usuário cadastrado.')
-            return []
-        termo = input('Digite o nome (ou parte) do usuário: ').strip().lower()
-        if not termo:
-            print('Nome não pode ser vazio.')
-            return []
-        encontrados = [
-            u for u in usuarios if termo in u.get('nome_completo', '').lower()
-        ]
-        if encontrados:
-            print(f'\n{len(encontrados)} usuário(s) encontrado(s):')
-            for usuario in encontrados:
-                print(
-                    f'ID: {usuario.get("id")} | Nome: {usuario.get("nome_completo")} | Email: {usuario.get("email")} | Empresa: {usuario.get("id_empresa")}'
-                )
-            return encontrados
-        else:
-            print('Nenhum usuário encontrado.')
-            return []
-    except Exception as e:
-        print('Erro ao buscar usuário por nome:', e)
-        return []
-
-
-def exportar_usuarios_json():
-    try:
-        import json
-
-        usuarios = carregar_dados(ARQUIVO_USUARIOS)
-        if not usuarios:
-            print('Nenhum usuário cadastrado.')
-            return
-        nome_arquivo = input(
-            'Digite o nome do arquivo para exportar (ex: usuarios.json): '
-        ).strip()
-        if not nome_arquivo:
-            nome_arquivo = 'usuarios_exportados.json'
-        if not nome_arquivo.endswith('.json'):
-            nome_arquivo += '.json'
-        with open(nome_arquivo, 'w', encoding='utf-8') as f:
-            json.dump(usuarios, f, ensure_ascii=False, indent=4)
-        print(f"Usuários exportados com sucesso para '{nome_arquivo}'")
-    except Exception as e:
-        print('Erro ao exportar usuários:', e)
