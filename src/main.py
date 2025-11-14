@@ -8,12 +8,13 @@ Inicializa o banco de dados e pool de conexões antes de exibir o menu.
 import logging
 import sys
 from pathlib import Path
+from services import storage_oracle as db
+from ui import crud_usuarios
 
 # Adiciona o diretório src ao path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
-from services import storage_oracle as db
-from ui import crud_usuarios
+
 
 
 def main():
