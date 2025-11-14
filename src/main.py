@@ -67,11 +67,7 @@ def main():
             crud_usuarios.deletar_usuario()
         elif opcao == '0':
             print('\nEncerrando sistema...')
-            """
-            main.py
-
-            Ponto de entrada principal do sistema UpPath CRUD.
-            """
+            break
 
 
 if __name__ == '__main__':
