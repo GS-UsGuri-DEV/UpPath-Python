@@ -1,65 +1,130 @@
-import hashlib
-import re
-from datetime import datetime
-import storage_oracle as db
+"""
+crud_usuarios.py
 
+Interface de usuário para operações CRUD de usuários.
+Refatorado para máxima reutilização e organização.
+"""
+
+import hashlib
+import storage_oracle as db
+from validators import (
+    validate_email, validate_string_field, validate_date, 
+    validate_id, validate_boolean_input,
+    MAX_NOME_COMPLETO, MAX_NIVEL_CARREIRA, 
+    MAX_OCUPACAO, MAX_GENERO
+)
+from db_utils import format_usuario_display
+
+
+def _input_with_validation(prompt: str, validator_func, **kwargs):
+    """Helper genérico para input com validação.
+    
+    Args:
+        prompt: Mensagem para o usuário
+        validator_func: Função de validação (deve retornar (valor, erro))
+        **kwargs: Argumentos adicionais para a função validadora
+        
+    Returns:
+        Tupla (valor_validado, sucesso)
+    """
+    user_input = input(prompt).strip()
+    value, error = validator_func(user_input, **kwargs)
+    
+    if error:
+        print(f'✗ {error}')
+        return None, False
+    
+    return value, True
 
 
 def criar_usuario():
+    """Cria um novo usuário com validações completas."""
     try:
         if db is None:
-            print(
-                'Adaptador Oracle não disponível. Instale/configure o driver e o módulo storage_oracle.'
-            )
+            print('✗ Adaptador Oracle não disponível.')
             return
 
-        db.init_table()
+        print('\n' + '='*60)
+        print('CADASTRO DE NOVO USUÁRIO')
+        print('='*60)
 
-        id_empresa = input('ID da empresa (opcional, Enter para nenhum): ').strip()
-        if id_empresa and not id_empresa.isdigit():
-            print('ID da empresa inválido.')
+        # ID da empresa (opcional)
+        id_empresa_str = input('ID da empresa (opcional, Enter para pular): ').strip()
+        id_empresa, _ = validate_id(id_empresa_str, 'ID da empresa')
+
+        # Nome completo
+        nome_completo, success = _input_with_validation(
+            'Nome completo: ',
+            validate_string_field,
+            field_name='Nome completo',
+            max_length=MAX_NOME_COMPLETO,
+            required=True
+        )
+        if not success:
             return
-        id_empresa = int(id_empresa) if id_empresa else None
 
-        nome_completo = input('Digite o nome completo: ').strip()
-        if not nome_completo:
-            print('Nome completo não pode ser vazio.')
+        # Email
+        email, success = _input_with_validation(
+            'Email: ',
+            validate_email
+        )
+        if not success:
             return
 
-        email = input('Digite o email: ').strip()
-        if not is_valid_email(email):
-            print('Email inválido.')
-            return
-
+        # Verifica duplicidade de email
         if db.email_existe(email):
-            print('Email já cadastrado.')
+            print('✗ Email já cadastrado.')
             return
 
-        senha = input('Digite a senha (será armazenada como hash): ').strip()
+        # Senha
+        senha = input('Senha: ').strip()
         if not senha:
-            print('Senha não pode ser vazia.')
+            print('✗ Senha não pode ser vazia.')
             return
         senha_hash = hashlib.sha256(senha.encode('utf-8')).hexdigest()
 
-        nivel_carreira = (
-            input('Nível de carreira (ex: Júnior/Pleno/Sênior): ').strip() or ''
+        # Nível de carreira
+        nivel_carreira, _ = _input_with_validation(
+            'Nível de carreira (Júnior/Pleno/Sênior): ',
+            validate_string_field,
+            field_name='Nível de carreira',
+            max_length=MAX_NIVEL_CARREIRA,
+            required=False,
+            default='Não especificado'
         )
-        ocupacao = input('Ocupação (cargo): ').strip() or ''
-        genero = input('Gênero: ').strip() or ''
 
-        data_nascimento = input('Data de nascimento (YYYY-MM-DD): ').strip()
-        if data_nascimento:
-            try:
-                dn_val = datetime.strptime(data_nascimento, '%Y-%m-%d').date()
-            except Exception:
-                print('Data de nascimento inválida. Use YYYY-MM-DD.')
-                return
-        else:
-            dn_val = None
+        # Ocupação
+        ocupacao, _ = _input_with_validation(
+            'Ocupação (cargo): ',
+            validate_string_field,
+            field_name='Ocupação',
+            max_length=MAX_OCUPACAO,
+            required=False,
+            default='Não especificado'
+        )
 
-        is_admin_input = input('É administrador? (s/n) [n]: ').strip().lower() or 'n'
-        is_admin = 1 if is_admin_input == 's' else 0
+        # Gênero
+        genero, _ = _input_with_validation(
+            'Gênero: ',
+            validate_string_field,
+            field_name='Gênero',
+            max_length=MAX_GENERO,
+            required=False,
+            default='Não especificado'
+        )
 
+        # Data de nascimento
+        data_nascimento, _ = _input_with_validation(
+            'Data de nascimento (YYYY-MM-DD, opcional): ',
+            validate_date,
+            required=False
+        )
+
+        # Administrador
+        is_admin_input = input('É administrador? (s/n) [n]: ').strip()
+        is_admin = 1 if validate_boolean_input(is_admin_input) else 0
+
+        # Monta dicionário
         usuario = {
             'id_empresa': id_empresa,
             'nome_completo': nome_completo,
@@ -68,67 +133,117 @@ def criar_usuario():
             'nivel_carreira': nivel_carreira,
             'ocupacao': ocupacao,
             'genero': genero,
-            'data_nascimento': dn_val,
+            'data_nascimento': data_nascimento,
             'is_admin': is_admin,
         }
 
+        # Insere no banco
         try:
             new_id = db.insert_usuario(usuario)
-            print(f'Usuário cadastrado com sucesso! (Oracle) id={new_id}')
+            print(f'\n✓ Usuário cadastrado com sucesso! ID: {new_id}')
         except Exception as e:
-            print('Erro ao inserir usuário no Oracle:', e)
+            print(f'\n✗ Erro ao inserir usuário: {e}')
+            
+    except KeyboardInterrupt:
+        print('\n\n✗ Operação cancelada pelo usuário.')
     except Exception as e:
-        print('Erro ao cadastrar usuário:', e)
+        print(f'\n✗ Erro ao cadastrar usuário: {e}')
 
 
 def listar_usuarios():
+    """Lista todos os usuários cadastrados."""
     try:
         if db is None:
-            print('Adaptador Oracle não disponível.')
+            print('✗ Adaptador Oracle não disponível.')
             return
-        db.init_table()
+
         usuarios = db.list_usuarios()
 
         if not usuarios:
-            print('Nenhum usuário cadastrado.')
+            print('\n⚠ Nenhum usuário cadastrado.')
             return
-        print('\nLista de Usuários:')
+
+        print('\n' + '='*60)
+        print(f'LISTA DE USUÁRIOS ({len(usuarios)} cadastrado(s))')
+        print('='*60)
+        
         for usuario in usuarios:
-            print(
-                f'ID: {usuario.get("id_usuario")} | Nome: {usuario.get("nome_completo")} | Email: {usuario.get("email")} | Empresa: {usuario.get("id_empresa")} | Nivel: {usuario.get("nivel_carreira")} | Ocupacao: {usuario.get("ocupacao")} | Genero: {usuario.get("genero")} | Nasc: {usuario.get("data_nascimento")} | Cadastrado: {usuario.get("data_cadastro")} | Admin: {usuario.get("is_admin")}'
-            )
+            print(format_usuario_display(usuario))
+            
     except Exception as e:
-        print('Erro ao listar usuários:', e)
+        print(f'\n✗ Erro ao listar usuários: {e}')
 
 
-def is_valid_email(email: str) -> bool:
-    """Validação simples de e-mail usando regex."""
-    if not email:
-        return False
-    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-    return re.match(pattern, email) is not None
-
-
-def atualizar_usuario():
+def buscar_usuario_por_id():
+    """Busca e exibe um usuário específico por ID."""
     try:
         if db is None:
-            print('Adaptador Oracle não disponível.')
+            print('✗ Adaptador Oracle não disponível.')
             return
-        db.init_table()
-        listar_usuarios()
-        id_str = input('\nDigite o ID do usuário a atualizar: ').strip()
-        if not id_str.isdigit():
-            print('ID inválido.')
+
+        id_usuario, success = _input_with_validation(
+            '\nID do usuário: ',
+            validate_id,
+            field_name='ID'
+        )
+        
+        if not success or not id_usuario:
             return
-        id_usuario = int(id_str)
+
         usuario = db.get_usuario_por_id(id_usuario)
 
         if not usuario:
-            print('Usuário não encontrado.')
+            print(f'\n✗ Usuário com ID {id_usuario} não encontrado.')
             return
 
+        print('\n' + '='*60)
+        print('DADOS DO USUÁRIO')
+        print('='*60)
+        print(f"ID:              {usuario.get('id_usuario')}")
+        print(f"Nome:            {usuario.get('nome_completo')}")
+        print(f"Email:           {usuario.get('email')}")
+        print(f"Empresa ID:      {usuario.get('id_empresa') or 'N/A'}")
+        print(f"Nível:           {usuario.get('nivel_carreira')}")
+        print(f"Ocupação:        {usuario.get('ocupacao')}")
+        print(f"Gênero:          {usuario.get('genero')}")
+        print(f"Nascimento:      {usuario.get('data_nascimento') or 'N/A'}")
+        print(f"Cadastrado em:   {usuario.get('data_cadastro')}")
+        print(f"Administrador:   {'Sim' if usuario.get('is_admin') == 1 else 'Não'}")
+        print('='*60)
+        
+    except Exception as e:
+        print(f'\n✗ Erro ao buscar usuário: {e}')
+
+
+def atualizar_usuario():
+    """Atualiza dados de um usuário existente."""
+    try:
+        if db is None:
+            print('✗ Adaptador Oracle não disponível.')
+            return
+
+        listar_usuarios()
+
+        id_usuario, success = _input_with_validation(
+            '\nID do usuário a atualizar: ',
+            validate_id,
+            field_name='ID'
+        )
+        
+        if not success or not id_usuario:
+            return
+
+        usuario = db.get_usuario_por_id(id_usuario)
+        if not usuario:
+            print('\n✗ Usuário não encontrado.')
+            return
+
+        print(f"\nAtualizando: {usuario.get('nome_completo')}")
+
         while True:
-            print('\n--- Atualizar Usuário ---')
+            print('\n' + '-'*60)
+            print('MENU DE ATUALIZAÇÃO')
+            print('-'*60)
             print('1 - ID da empresa')
             print('2 - Nome completo')
             print('3 - Email')
@@ -139,118 +254,153 @@ def atualizar_usuario():
             print('8 - Data de nascimento')
             print('9 - Flag admin')
             print('0 - Salvar e voltar')
-            escolha = input('Escolha opção: ').strip()
+            print('-'*60)
+            
+            escolha = input('Escolha: ').strip()
 
             if escolha == '1':
-                novo = input(
-                    'Novo ID da empresa (vazio para remover vínculo): '
-                ).strip()
-                if novo == '':
-                    usuario['id_empresa'] = None
-                    print('Vínculo com empresa removido.')
-                elif not novo.isdigit():
-                    print('ID inválido.')
-                else:
-                    usuario['id_empresa'] = int(novo)
-                    print('ID da empresa atualizado.')
+                novo_id, _ = validate_id(
+                    input('Novo ID da empresa (vazio para remover): ').strip()
+                )
+                usuario['id_empresa'] = novo_id
+                print('✓ ID da empresa atualizado.')
+
             elif escolha == '2':
-                novo = input('Novo nome completo: ').strip()
-                if novo:
+                novo, success = _input_with_validation(
+                    'Novo nome completo: ',
+                    validate_string_field,
+                    field_name='Nome',
+                    max_length=MAX_NOME_COMPLETO,
+                    required=True
+                )
+                if success:
                     usuario['nome_completo'] = novo
-                    print('Nome atualizado.')
-                else:
-                    print('Nenhuma alteração.')
+                    print('✓ Nome atualizado.')
+
             elif escolha == '3':
-                novo = input('Novo email: ').strip()
-                if not is_valid_email(novo):
-                    print('Email inválido.')
-                else:
-                    # checa duplicidade
+                novo, success = _input_with_validation(
+                    'Novo email: ',
+                    validate_email
+                )
+                if success:
                     if db.email_existe(novo, exclude_id=id_usuario):
-                        print('Email já cadastrado.')
+                        print('✗ Email já cadastrado.')
                     else:
                         usuario['email'] = novo
-                        print('Email atualizado.')
+                        print('✓ Email atualizado.')
+
             elif escolha == '4':
                 novo = input('Nova senha: ').strip()
                 if novo:
-                    usuario['senha_hash'] = hashlib.sha256(
-                        novo.encode('utf-8')
-                    ).hexdigest()
-                    print('Senha atualizada.')
+                    usuario['senha_hash'] = hashlib.sha256(novo.encode('utf-8')).hexdigest()
+                    print('✓ Senha atualizada.')
                 else:
-                    print('Nenhuma alteração na senha.')
+                    print('⚠ Senha não alterada.')
+
             elif escolha == '5':
-                novo = input('Novo nível de carreira: ').strip()
-                usuario['nivel_carreira'] = novo or usuario.get('nivel_carreira')
-                print('Nível de carreira atualizado.')
+                novo, _ = _input_with_validation(
+                    'Novo nível de carreira: ',
+                    validate_string_field,
+                    field_name='Nível',
+                    max_length=MAX_NIVEL_CARREIRA,
+                    required=False,
+                    default='Não especificado'
+                )
+                usuario['nivel_carreira'] = novo
+                print('✓ Nível atualizado.')
+
             elif escolha == '6':
-                novo = input('Nova ocupação: ').strip()
-                usuario['ocupacao'] = novo or usuario.get('ocupacao')
-                print('Ocupação atualizada.')
+                novo, _ = _input_with_validation(
+                    'Nova ocupação: ',
+                    validate_string_field,
+                    field_name='Ocupação',
+                    max_length=MAX_OCUPACAO,
+                    required=False,
+                    default='Não especificado'
+                )
+                usuario['ocupacao'] = novo
+                print('✓ Ocupação atualizada.')
+
             elif escolha == '7':
-                novo = input('Novo gênero: ').strip()
-                usuario['genero'] = novo or usuario.get('genero')
-                print('Gênero atualizado.')
+                novo, _ = _input_with_validation(
+                    'Novo gênero: ',
+                    validate_string_field,
+                    field_name='Gênero',
+                    max_length=MAX_GENERO,
+                    required=False,
+                    default='Não especificado'
+                )
+                usuario['genero'] = novo
+                print('✓ Gênero atualizado.')
+
             elif escolha == '8':
-                novo = input('Nova data de nascimento (YYYY-MM-DD): ').strip()
-                if novo:
-                    try:
-                        datetime.strptime(novo, '%Y-%m-%d')
-                        usuario['data_nascimento'] = novo
-                        print('Data de nascimento atualizada.')
-                    except Exception:
-                        print('Formato inválido. Use YYYY-MM-DD.')
-                else:
-                    print('Nenhuma alteração.')
+                novo, success = _input_with_validation(
+                    'Nova data de nascimento (YYYY-MM-DD): ',
+                    validate_date,
+                    required=False
+                )
+                if success:
+                    usuario['data_nascimento'] = novo
+                    print('✓ Data atualizada.')
+
             elif escolha == '9':
-                novo = input('É administrador? (s/n): ').strip().lower()
-                if novo in ('s', 'n'):
-                    usuario['is_admin'] = 1 if novo == 's' else 0
-                    print('Flag admin atualizada.')
-                else:
-                    print('Entrada inválida.')
+                novo_admin = input('É administrador? (s/n): ').strip()
+                usuario['is_admin'] = 1 if validate_boolean_input(novo_admin) else 0
+                print('✓ Flag admin atualizada.')
+
             elif escolha == '0':
-                # aplica alterações no banco via API
                 try:
                     db.update_usuario(id_usuario, usuario)
-                    print('Alterações salvas (Oracle).')
+                    print('\n✓ Alterações salvas com sucesso!')
                     break
                 except Exception as e:
-                    print('Erro ao atualizar usuário no Oracle:', e)
+                    print(f'\n✗ Erro ao salvar: {e}')
                     break
             else:
-                print('Opção inválida.')
+                print('✗ Opção inválida.')
+                
+    except KeyboardInterrupt:
+        print('\n\n✗ Operação cancelada.')
     except Exception as e:
-        print('Erro ao atualizar usuário:', e)
+        print(f'\n✗ Erro ao atualizar usuário: {e}')
 
 
 def deletar_usuario():
+    """Remove um usuário do sistema."""
     try:
         if db is None:
-            print('Adaptador Oracle não disponível.')
+            print('✗ Adaptador Oracle não disponível.')
             return
-        listar_usuarios()
-        id_str = input('\nDigite o ID do usuário a remover: ').strip()
-        if not id_str.isdigit():
-            print('ID inválido.')
-            return
-        id_usuario = int(id_str)
-        # busca nome para confirmação
-        u = db.get_usuario_por_id(id_usuario)
-        if not u:
-            print('Usuário não encontrado.')
-            return
-        nome = u.get('nome_completo')
 
-        confirm = input(f"Confirma a exclusão de '{nome}'? (s/n): ").strip().lower()
-        if confirm == 's':
+        listar_usuarios()
+
+        id_usuario, success = _input_with_validation(
+            '\nID do usuário a remover: ',
+            validate_id,
+            field_name='ID'
+        )
+        
+        if not success or not id_usuario:
+            return
+
+        usuario = db.get_usuario_por_id(id_usuario)
+        if not usuario:
+            print('\n✗ Usuário não encontrado.')
+            return
+
+        nome = usuario.get('nome_completo')
+        confirm = input(f"\n⚠ Confirma exclusão de '{nome}'? (s/n): ").strip()
+        
+        if validate_boolean_input(confirm):
             try:
                 db.delete_usuario(id_usuario)
-                print('Usuário removido com sucesso! (Oracle)')
+                print(f'\n✓ Usuário "{nome}" removido com sucesso!')
             except Exception as e:
-                print('Erro ao remover usuário no Oracle:', e)
+                print(f'\n✗ Erro ao remover: {e}')
         else:
-            print('Exclusão cancelada.')
+            print('\n✗ Exclusão cancelada.')
+            
+    except KeyboardInterrupt:
+        print('\n\n✗ Operação cancelada.')
     except Exception as e:
-        print('Erro ao deletar usuário:', e)
+        print(f'\n✗ Erro ao deletar usuário: {e}')
