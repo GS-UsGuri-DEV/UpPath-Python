@@ -10,6 +10,8 @@ from pathlib import Path
 # Carrega variáveis de ambiente do arquivo .env ANTES de importar módulos
 from dotenv import load_dotenv
 
+from src.ui import painel_queries
+
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
@@ -67,7 +69,7 @@ def main():
         elif opcao == '5':
             crud_usuarios.deletar_usuario()
         elif opcao == '6':
-            crud_usuarios.querries()
+            painel_queries.querries()
         elif opcao == '0':
             print('\nEncerrando sistema...')
             break
