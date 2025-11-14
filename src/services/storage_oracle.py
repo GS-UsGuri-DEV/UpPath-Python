@@ -193,16 +193,25 @@ def insert_usuario(usuario: Dict, conn_info: Dict = None) -> int:
             next_id = cur.fetchone()[0]
 
         dn = usuario.get('data_nascimento')
+        dn_val = None
+
         if isinstance(dn, str):
-            dn_val = None
-            for fmt in ('%Y-%m-%d', '%d/%m/%Y'):
-                try:
-                    dn_val = datetime.strptime(dn, fmt).date()
-                    break
-                except Exception:
-                    continue
-        else:
+            if dn.strip():  # Se não for string vazia
+                for fmt in ('%Y-%m-%d', '%d/%m/%Y'):
+                    try:
+                        dn_val = datetime.strptime(dn, fmt).date()
+                        break
+                    except Exception:
+                        continue
+        elif isinstance(dn, date):
             dn_val = dn
+
+        # Se ainda for None, usa data padrão
+        if dn_val is None:
+            dn_val = date(1900, 1, 1)
+            logging.warning(
+                'Data de nascimento não fornecida, usando data padrão: 01/01/1900'
+            )
 
         cur.execute(
             'INSERT INTO usuarios (id_usuario, id_empresa, nome_completo, email, senha_hash, nivel_carreira, ocupacao, genero, data_nascimento, is_admin) VALUES (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10)',
@@ -309,16 +318,44 @@ def update_usuario(id_usuario: int, usuario: Dict, conn_info: Dict = None) -> No
     cur = conn.cursor()
     try:
         dn = usuario.get('data_nascimento')
+        dn_val = None
+
         if isinstance(dn, str):
-            dn_val = None
-            for fmt in ('%Y-%m-%d', '%d/%m/%Y'):
-                try:
-                    dn_val = datetime.strptime(dn, fmt).date()
-                    break
-                except Exception:
-                    continue
-        else:
+            # Se for string vazia, busca o valor atual do banco
+            if not dn.strip():
+                cur.execute(
+                    'SELECT data_nascimento FROM usuarios WHERE id_usuario = :1',
+                    (id_usuario,),
+                )
+                row = cur.fetchone()
+                dn_val = row[0] if row else None
+            else:
+                # Tenta converter a string para date (tenta vários formatos)
+                for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%Y-%m-%dT%H:%M:%S'):
+                    try:
+                        dn_val = datetime.strptime(dn, fmt).date()
+                        break
+                    except Exception:
+                        continue
+        elif isinstance(dn, date):
             dn_val = dn
+        elif dn is None:
+            # Se vier como None, busca o valor atual do banco para não sobrescrever
+            cur.execute(
+                'SELECT data_nascimento FROM usuarios WHERE id_usuario = :1',
+                (id_usuario,),
+            )
+            row = cur.fetchone()
+            dn_val = row[0] if row else None
+
+        # Se ainda for None após todas as tentativas, usa uma data padrão
+        if dn_val is None:
+            # Usa data padrão: 01/01/1900
+            dn_val = date(1900, 1, 1)
+            logging.warning(
+                f'Data de nascimento NULL para usuário {id_usuario}, usando data padrão: 01/01/1900'
+            )
+
         cur.execute(
             'UPDATE usuarios SET id_empresa = :1, nome_completo = :2, email = :3, senha_hash = :4, nivel_carreira = :5, ocupacao = :6, genero = :7, data_nascimento = :8, is_admin = :9 WHERE id_usuario = :10',
             (
