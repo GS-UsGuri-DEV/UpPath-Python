@@ -15,7 +15,7 @@ load_dotenv(dotenv_path=env_path)
 
 # Agora importa os módulos que dependem das variáveis de ambiente
 from services import storage_oracle as db
-from ui import crud_usuarios
+from ui import crud_usuarios, painel_queries
 
 
 def main():
@@ -50,6 +50,7 @@ def main():
         print('3 - Buscar usuário por ID')
         print('4 - Atualizar usuário')
         print('5 - Deletar usuário')
+        print('6 - Querries')
         print('0 - Sair')
         print('=' * 60)
 
@@ -65,6 +66,8 @@ def main():
             crud_usuarios.atualizar_usuario()
         elif opcao == '5':
             crud_usuarios.deletar_usuario()
+        elif opcao == '6':
+            painel_queries.querries()
         elif opcao == '0':
             print('\nEncerrando sistema...')
             break
