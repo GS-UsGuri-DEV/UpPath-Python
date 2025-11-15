@@ -10,14 +10,12 @@ from pathlib import Path
 # Carrega variáveis de ambiente do arquivo .env ANTES de importar módulos
 from dotenv import load_dotenv
 
-from src.ui import painel_queries
-
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
 # Agora importa os módulos que dependem das variáveis de ambiente
 from services import storage_oracle as db
-from ui import crud_usuarios
+from ui import crud_usuarios, painel_queries
 
 
 def main():
