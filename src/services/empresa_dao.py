@@ -1,4 +1,4 @@
- """
+"""
 Operações de persistência para a entidade `empresas`.
 """
 
