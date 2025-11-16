@@ -1,6 +1,7 @@
 import hashlib
 
 from src.services import usuario_dao as db
+from src.services.exceptions import DatabaseError
 from utils.db_utils import format_usuario_display
 from utils.validators import (
     MAX_GENERO,
@@ -145,8 +146,10 @@ def criar_usuario():
         try:
             new_id = db.insert_usuario(usuario)
             print(f'\n✓ Usuário cadastrado com sucesso! ID: {new_id}')
-        except Exception as e:
+        except DatabaseError as e:
             print(f'\n✗ Erro ao inserir usuário: {e}')
+        except Exception as e:
+            print(f'\n✗ Erro inesperado ao inserir usuário: {e}')
 
     except KeyboardInterrupt:
         print('\n\n✗ Operação cancelada pelo usuário.')
@@ -366,8 +369,11 @@ def atualizar_usuario():
                     db.update_usuario(id_usuario, usuario)
                     print('\n✓ Alterações salvas com sucesso!')
                     break
-                except Exception as e:
+                except DatabaseError as e:
                     print(f'\n✗ Erro ao salvar: {e}')
+                    break
+                except Exception as e:
+                    print(f'\n✗ Erro inesperado ao salvar: {e}')
                     break
             else:
                 print('✗ Opção inválida.')
@@ -406,8 +412,10 @@ def deletar_usuario():
             try:
                 db.delete_usuario(id_usuario)
                 print(f'\n✓ Usuário "{nome}" removido com sucesso!')
-            except Exception as e:
+            except DatabaseError as e:
                 print(f'\n✗ Erro ao remover: {e}')
+            except Exception as e:
+                print(f'\n✗ Erro inesperado ao remover: {e}')
         else:
             print('\n✗ Exclusão cancelada.')
 

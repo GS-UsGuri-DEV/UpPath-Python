@@ -7,8 +7,9 @@ from datetime import date, datetime
 from typing import Dict, List, Optional
 
 from .DAO import _connect
+from .exceptions import DatabaseError
 
-logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _rows_to_dicts(cursor) -> List[Dict]:
@@ -117,8 +118,8 @@ def insert_usuario(usuario: Dict, conn_info: Dict = None) -> int:
         return next_id
     except Exception as e:
         conn.rollback()
-        logging.error(f'Erro ao inserir usuário: {e}')
-        raise
+        logger.error(f'Erro ao inserir usuário: {e}')
+        raise DatabaseError('Erro ao inserir usuário') from e
     finally:
         cur.close()
         conn.close()
@@ -141,6 +142,9 @@ def get_usuario_por_id(id_usuario: int, conn_info: Dict = None) -> Optional[Dict
         )
         rows = _rows_to_dicts(cur)
         return rows[0] if rows else None
+    except Exception as e:
+        logger.error(f'Erro ao consultar usuário {id_usuario}: {e}')
+        raise DatabaseError('Erro ao consultar usuário') from e
     finally:
         cur.close()
         conn.close()
@@ -161,6 +165,9 @@ def list_usuarios(conn_info: Dict = None) -> List[Dict]:
             """
         )
         return _rows_to_dicts(cur)
+    except Exception as e:
+        logger.error(f'Erro ao listar usuários: {e}')
+        raise DatabaseError('Erro ao listar usuários') from e
     finally:
         cur.close()
         conn.close()
@@ -230,8 +237,8 @@ def update_usuario(id_usuario: int, usuario: Dict, conn_info: Dict = None) -> No
         logging.info(f'Usuário atualizado: id={id_usuario}')
     except Exception as e:
         conn.rollback()
-        logging.error(f'Erro ao atualizar usuário {id_usuario}: {e}')
-        raise
+        logger.error(f'Erro ao atualizar usuário {id_usuario}: {e}')
+        raise DatabaseError('Erro ao atualizar usuário') from e
     finally:
         cur.close()
         conn.close()
@@ -243,14 +250,14 @@ def delete_usuario(id_usuario: int, conn_info: Dict = None) -> None:
     try:
         cur.execute('DELETE FROM usuarios WHERE id_usuario = :1', (id_usuario,))
         if cur.rowcount == 0:
-            logging.warning(f'Nenhum usuário encontrado com id={id_usuario}')
+            logger.warning(f'Nenhum usuário encontrado com id={id_usuario}')
         else:
-            logging.info(f'Usuário removido: id={id_usuario}')
+            logger.info(f'Usuário removido: id={id_usuario}')
         conn.commit()
     except Exception as e:
         conn.rollback()
-        logging.error(f'Erro ao deletar usuário {id_usuario}: {e}')
-        raise
+        logger.error(f'Erro ao deletar usuário {id_usuario}: {e}')
+        raise DatabaseError('Erro ao deletar usuário') from e
     finally:
         cur.close()
         conn.close()
@@ -268,6 +275,9 @@ def email_existe(email: str, exclude_id: int = None, conn_info: Dict = None) -> 
         else:
             cur.execute('SELECT COUNT(1) FROM usuarios WHERE email = :1', (email,))
         return cur.fetchone()[0] > 0
+    except Exception as e:
+        logger.error(f'Erro ao verificar email: {e}')
+        raise DatabaseError('Erro ao verificar email') from e
     finally:
         cur.close()
         conn.close()
