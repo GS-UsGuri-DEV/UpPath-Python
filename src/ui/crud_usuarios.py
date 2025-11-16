@@ -1,5 +1,6 @@
 import hashlib
-from src.services import DAO as db
+
+from src.services import usuario_dao as db
 from utils.db_utils import format_usuario_display
 from utils.validators import (
     MAX_GENERO,
@@ -337,7 +338,7 @@ def atualizar_usuario():
                     novo_input = input_date_mask(
                         'Nova data de nascimento (DD/MM/YYYY, vazio para manter): '
                     ).strip()
-                    # Se vazio, mantém o valor atual 
+                    # Se vazio, mantém o valor atual
                     if novo_input == '':
                         print('✓ Data mantida.')
                         break
@@ -346,7 +347,7 @@ def atualizar_usuario():
                     if novo_err:
                         print(f'✗ {novo_err}')
                         continue
-                    
+
                     if novo_val is not None:
                         usuario['data_nascimento'] = novo_val
                         print('✓ Data atualizada.')
