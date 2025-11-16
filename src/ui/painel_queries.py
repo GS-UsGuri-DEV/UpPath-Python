@@ -1,6 +1,6 @@
 import json
 from services import consultas
-from services import storage_oracle as db
+from src.services import DAO as db
 from utils.validators import validate_id
 
 def querries():

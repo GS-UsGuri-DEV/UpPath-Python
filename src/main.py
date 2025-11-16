@@ -14,7 +14,7 @@ env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
 # Agora importa os módulos que dependem das variáveis de ambiente
-from services import storage_oracle as db
+from src.services import DAO as db
 from ui import crud_usuarios, painel_queries
 
 
