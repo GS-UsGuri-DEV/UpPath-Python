@@ -1,4 +1,5 @@
 import json
+import os
 
 from src.services import DAO as db
 from src.services import consultas
@@ -28,7 +29,7 @@ def querries():
 def painel_corporativo():
     """Menu para consultas do painel corporativo da empresa."""
     print('\n' + '=' * 60)
-    print('PAINEL CORPORATIVO (Empresa)')
+    print('PAINEL CORPORATIVO')
     print('=' * 60)
     print('1 - Distribuição de níveis de carreira')
     print('2 - Média de bem-estar da empresa')
@@ -62,15 +63,19 @@ def painel_corporativo():
         export = input('Exportar resultado para JSON? (s/n): ').strip().lower()
         if export in ('s', 'sim', 'y', 'yes'):
             nome_arquivo = input('Nome do arquivo (ex: painel_empresa.json): ').strip()
-            with open(nome_arquivo, 'w', encoding='utf-8') as f:
+            pasta_data = os.path.join(os.path.dirname(__file__), '..', 'data')
+            pasta_data = os.path.abspath(pasta_data)
+            os.makedirs(pasta_data, exist_ok=True)
+            caminho_arquivo = os.path.join(pasta_data, nome_arquivo)
+            with open(caminho_arquivo, 'w', encoding='utf-8') as f:
                 json.dump(dados, f, ensure_ascii=False, indent=2)
-            print(f'✓ Exportado para {nome_arquivo}')
+            print(f'✓ Exportado para {caminho_arquivo}')
 
 
 def querries_usuario():
     """Menu para consultas do painel individual do usuário."""
     print('\n' + '=' * 60)
-    print('PAINEL do Usuário)')
+    print('PAINEL do Usuário')
     print('=' * 60)
     print('1 - Evolução do bem-estar')
     print('2 - Progresso nas trilhas')
@@ -99,6 +104,10 @@ def querries_usuario():
         export = input('Exportar resultado para JSON? (s/n): ').strip().lower()
         if export in ('s', 'sim', 'y', 'yes'):
             nome_arquivo = input('Nome do arquivo (ex: painel_user.json): ').strip()
-            with open(nome_arquivo, 'w', encoding='utf-8') as f:
+            pasta_data = os.path.join(os.path.dirname(__file__), '..', 'data')
+            pasta_data = os.path.abspath(pasta_data)
+            os.makedirs(pasta_data, exist_ok=True)
+            caminho_arquivo = os.path.join(pasta_data, nome_arquivo)
+            with open(caminho_arquivo, 'w', encoding='utf-8') as f:
                 json.dump(dados, f, ensure_ascii=False, indent=2)
-            print(f'✓ Exportado para {nome_arquivo}')
+            print(f'✓ Exportado para {caminho_arquivo}')
