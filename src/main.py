@@ -6,20 +6,28 @@ Inicializa o banco de dados e pool de conexões antes de exibir o menu.
 """
 
 from pathlib import Path
+import sys
 
-# Carrega variáveis de ambiente do arquivo .env ANTES de importar módulos
 from dotenv import load_dotenv
 
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-# Agora importa os módulos que dependem das variáveis de ambiente
-from src.services import DAO as db
-from src.ui import crud_usuarios, painel_queries
+# Garantir que a raiz do projeto esteja no sys.path para permitir
+# imports absolutos do pacote `src` quando o script for executado
+# diretamente (ex: `python src\\main.py`).
+project_root = Path(__file__).parent.parent.resolve()
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 
 def main():
     """Função principal que inicializa o sistema e exibe o menu."""
+    # agora que o .env foi carregado e o sys.path ajustado, importe os
+    # módulos que dependem das variáveis de ambiente/projeto
+    from src.services import DAO as db
+    from src.ui import crud_usuarios, painel_queries
+
     print('=' * 60)
     print('Sistema UpPath - Gestão de Usuários')
     print('=' * 60)
@@ -28,12 +36,12 @@ def main():
     try:
         print('\nInicializando banco de dados...')
         db.init_table()
-        print('✓ Banco de dados inicializado com sucesso!')
+        print('OK - Banco de dados inicializado com sucesso!')
 
         # Operando sem pool de conexões (conexões diretas)
 
     except Exception as e:
-        print(f'\n✗ Erro ao inicializar banco de dados: {e}')
+        print(f'\nERRO ao inicializar banco de dados: {e}')
         print('Verifique se as variáveis de ambiente estão configuradas:')
         print('  - ORACLE_USER')
         print('  - ORACLE_PASSWORD')
