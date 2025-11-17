@@ -7,7 +7,7 @@ Retornam listas de dicionários prontos para exportação em JSON.
 
 from typing import Any, Dict, List
 
-from utils.validators import ValidationError
+from src.utils.validators import ValidationError
 
 # Todas as funções recebem um cursor Oracle e parâmetros validados
 

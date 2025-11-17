@@ -15,7 +15,7 @@ load_dotenv(dotenv_path=env_path)
 
 # Agora importa os módulos que dependem das variáveis de ambiente
 from src.services import DAO as db
-from ui import crud_usuarios, painel_queries
+from src.ui import crud_usuarios, painel_queries
 
 
 def main():

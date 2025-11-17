@@ -1,7 +1,7 @@
 import json
-from services import consultas
+from src.services import consultas
 from src.services import DAO as db
-from utils.validators import validate_id
+from src.utils.validators import validate_id
 
 def querries():
     """Menu de consultas customizadas, incluindo dashboards."""

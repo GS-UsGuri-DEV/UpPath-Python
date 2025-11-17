@@ -2,8 +2,8 @@ import hashlib
 
 from src.services import usuario_dao as db
 from src.services.exceptions import DatabaseError
-from utils.db_utils import format_usuario_display
-from utils.validators import (
+from src.utils.db_utils import format_usuario_display
+from src.utils.validators import (
     MAX_GENERO,
     MAX_NIVEL_CARREIRA,
     MAX_NOME_COMPLETO,
