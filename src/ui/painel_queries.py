@@ -1,9 +1,18 @@
+import datetime
 import json
 import os
 
 from src.services import DAO as db
 from src.services import consultas
 from src.utils.validators import validate_id
+
+
+def _json_serializer(obj):
+    """Serializador JSON para objetos não-serializáveis como datetime."""
+    if isinstance(obj, (datetime.datetime, datetime.date)):
+        return obj.isoformat()
+    # fallback: str() for other unknown types
+    return str(obj)
 
 
 def querries():
@@ -59,7 +68,7 @@ def painel_corporativo():
         else:
             print('✗ Opção inválida.')
             return
-        print(json.dumps(dados, ensure_ascii=False, indent=2))
+        print(json.dumps(dados, ensure_ascii=False, indent=2, default=_json_serializer))
         export = input('Exportar resultado para JSON? (s/n): ').strip().lower()
         if export in ('s', 'sim', 'y', 'yes'):
             nome_arquivo = input('Nome do arquivo (ex: painel_empresa.json): ').strip()
@@ -68,7 +77,9 @@ def painel_corporativo():
             os.makedirs(pasta_data, exist_ok=True)
             caminho_arquivo = os.path.join(pasta_data, nome_arquivo)
             with open(caminho_arquivo, 'w', encoding='utf-8') as f:
-                json.dump(dados, f, ensure_ascii=False, indent=2)
+                json.dump(
+                    dados, f, ensure_ascii=False, indent=2, default=_json_serializer
+                )
             print(f'✓ Exportado para {caminho_arquivo}')
 
 
@@ -100,7 +111,7 @@ def querries_usuario():
         else:
             print('✗ Opção inválida.')
             return
-        print(json.dumps(dados, ensure_ascii=False, indent=2))
+        print(json.dumps(dados, ensure_ascii=False, indent=2, default=_json_serializer))
         export = input('Exportar resultado para JSON? (s/n): ').strip().lower()
         if export in ('s', 'sim', 'y', 'yes'):
             nome_arquivo = input('Nome do arquivo (ex: painel_user.json): ').strip()
@@ -109,5 +120,7 @@ def querries_usuario():
             os.makedirs(pasta_data, exist_ok=True)
             caminho_arquivo = os.path.join(pasta_data, nome_arquivo)
             with open(caminho_arquivo, 'w', encoding='utf-8') as f:
-                json.dump(dados, f, ensure_ascii=False, indent=2)
+                json.dump(
+                    dados, f, ensure_ascii=False, indent=2, default=_json_serializer
+                )
             print(f'✓ Exportado para {caminho_arquivo}')
