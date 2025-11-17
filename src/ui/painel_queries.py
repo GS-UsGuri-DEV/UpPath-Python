@@ -1,7 +1,9 @@
 import json
-from src.services import consultas
+
 from src.services import DAO as db
+from src.services import consultas
 from src.utils.validators import validate_id
+
 
 def querries():
     """Menu de consultas customizadas, incluindo dashboards."""
@@ -21,6 +23,7 @@ def querries():
         return
     else:
         print('✗ Opção inválida.')
+
 
 def painel_corporativo():
     """Menu para consultas do painel corporativo da empresa."""
@@ -45,7 +48,9 @@ def painel_corporativo():
         elif opcao == '2':
             dados = consultas.consulta_media_bem_estar_empresa(cursor, id_empresa)
         elif opcao == '3':
-            dados = consultas.consulta_trilhas_mais_utilizadas_empresa(cursor, id_empresa)
+            dados = consultas.consulta_trilhas_mais_utilizadas_empresa(
+                cursor, id_empresa
+            )
         elif opcao == '4':
             dados = consultas.consulta_funcionarios_baixa_motivacao(cursor, id_empresa)
         elif opcao == '0':
@@ -60,6 +65,7 @@ def painel_corporativo():
             with open(nome_arquivo, 'w', encoding='utf-8') as f:
                 json.dump(dados, f, ensure_ascii=False, indent=2)
             print(f'✓ Exportado para {nome_arquivo}')
+
 
 def querries_usuario():
     """Menu para consultas do painel individual do usuário."""
