@@ -68,13 +68,25 @@ def insert_usuario(usuario: Dict, conn_info: Dict = None) -> int:
     conn = _connect(conn_info)
     cur = conn.cursor()
     try:
-        try:
-            cur.execute('SELECT usuarios_seq.NEXTVAL FROM dual')
-            next_id = cur.fetchone()[0]
-        except Exception as e:
-            logging.warning(f'Sequence não disponível, usando MAX+1: {e}')
+        # Sempre use a sequence para gerar o próximo id_usuario
+        cur.execute('SELECT usuarios_seq.NEXTVAL FROM dual')
+        next_id = cur.fetchone()[0]
+
+        # Verifica se o id já existe (raro, mas pode acontecer se a sequence está fora de sincronia)
+        cur.execute('SELECT COUNT(1) FROM usuarios WHERE id_usuario = :1', (next_id,))
+        if cur.fetchone()[0] > 0:
+            # Se existe, sincronize a sequence para o próximo valor
             cur.execute('SELECT NVL(MAX(id_usuario),0) + 1 FROM usuarios')
             next_id = cur.fetchone()[0]
+            # Opcional: atualize a sequence para evitar futuros conflitos
+            try:
+                cur.execute(
+                    f'ALTER SEQUENCE usuarios_seq INCREMENT BY {next_id - next_id} MINVALUE {next_id} START WITH {next_id} NOCACHE'
+                )
+                cur.execute('SELECT usuarios_seq.NEXTVAL FROM dual')
+                next_id = cur.fetchone()[0]
+            except Exception:
+                pass
 
         dn = usuario.get('data_nascimento')
         dn_val = None
@@ -133,7 +145,7 @@ def get_usuario_por_id(id_usuario: int, conn_info: Dict = None) -> Optional[Dict
             """
             SELECT id_usuario, id_empresa, nome_completo, email, senha_hash,
                    nivel_carreira, ocupacao, genero, data_nascimento,
-                   TO_CHAR(data_cadastro, 'YYYY-MM-DD"T"HH24:MI:SS TZH:TZM') AS data_cadastro,
+                   TO_CHAR(data_cadastro, 'YYYY-MM-DD"T"HH24:MI:SS') AS data_cadastro,
                    is_admin
             FROM usuarios
             WHERE id_usuario = :1
