@@ -49,7 +49,6 @@ A API estará disponível em: `http://localhost:5000`
 - **GET** `/api/v1/dashboard/company/<id_empresa>/baixa-motivacao` - Funcionários com baixa motivação
 - **GET** `/api/v1/dashboard/company/<id_empresa>/completo` - Dashboard completo da empresa
 
-
 ## Exemplos de Uso
 
 ### Usando curl
@@ -72,22 +71,22 @@ curl http://localhost:5000/api/v1/empresas/contagem
 
 ```javascript
 // Dashboard do usuário
-fetch('http://localhost:5000/api/v1/dashboard/user/1/completo')
-  .then(response => response.json())
-  .then(data => {
-    console.log('Dashboard do usuário:', data);
+fetch("http://localhost:5000/api/v1/dashboard/user/1/completo")
+  .then((response) => response.json())
+  .then((data) => {
+    console.log("Dashboard do usuário:", data);
     // Atualizar gráficos aqui
   })
-  .catch(error => console.error('Erro:', error));
+  .catch((error) => console.error("Erro:", error));
 
 // Dashboard da empresa
-fetch('http://localhost:5000/api/v1/dashboard/company/1/completo')
-  .then(response => response.json())
-  .then(data => {
-    console.log('Dashboard da empresa:', data);
+fetch("http://localhost:5000/api/v1/dashboard/company/1/completo")
+  .then((response) => response.json())
+  .then((data) => {
+    console.log("Dashboard da empresa:", data);
     // Atualizar gráficos aqui
   })
-  .catch(error => console.error('Erro:', error));
+  .catch((error) => console.error("Erro:", error));
 ```
 
 ### Usando Python (requests)
@@ -206,7 +205,7 @@ print(dashboard['data'])
 
 ## CORS
 
-A API está configurada para aceitar requisições de qualquer origem durante o desenvolvimento. 
+A API está configurada para aceitar requisições de qualquer origem durante o desenvolvimento.
 Em produção, configure o CORS para aceitar apenas domínios específicos editando `src/api/app.py`:
 
 ```python
@@ -223,6 +222,7 @@ CORS(app, resources={
 ### Erro de conexão com o banco
 
 Verifique se:
+
 - As variáveis de ambiente estão configuradas corretamente
 - O banco Oracle está acessível
 - As credenciais estão corretas
@@ -230,6 +230,7 @@ Verifique se:
 ### Erro de CORS
 
 Se estiver recebendo erros de CORS no navegador:
+
 - Verifique se a API está rodando
 - Confirme que o CORS está habilitado no `app.py`
 - Em desenvolvimento, use um proxy ou configure o CORS para aceitar todas as origens
@@ -237,6 +238,7 @@ Se estiver recebendo erros de CORS no navegador:
 ### Porta já em uso
 
 Se a porta 5000 já estiver em uso, altere em `app.py`:
+
 ```python
 app.run(debug=True, host='0.0.0.0', port=5001)  # ou outra porta
 ```
