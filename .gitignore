@@ -12,3 +12,7 @@ __pycache__/
 .ipynb_checkpoints/
 # General cache
 cache/
+venv/
+.venv/
+
+data/

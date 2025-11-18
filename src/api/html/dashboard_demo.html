@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UpPath - Dashboard Demo</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        color: white;
+        text-align: center;
+        margin-bottom: 30px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .controls {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .controls h2 {
+        margin-bottom: 15px;
+        color: #333;
+      }
+
+      .input-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #555;
+      }
+
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+
+      button {
+        background: #667eea;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.3s;
+        margin-top: 10px;
+      }
+
+      button:hover {
+        background: #5568d3;
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
+
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .card h3 {
+        margin-bottom: 15px;
+        color: #667eea;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 10px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #999;
+      }
+
+      .error {
+        background: #fee;
+        color: #c33;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #c33;
+      }
+
+      .data-item {
+        padding: 10px;
+        margin-bottom: 10px;
+        background: #f5f5f5;
+        border-radius: 5px;
+      }
+
+      .data-item strong {
+        color: #667eea;
+      }
+
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+      }
+
+      .stat:last-child {
+        border-bottom: none;
+      }
+
+      .stat-label {
+        font-weight: 600;
+        color: #555;
+      }
+
+      .stat-value {
+        color: #667eea;
+        font-weight: 700;
+      }
+
+      pre {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        font-size: 12px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🚀 UpPath Dashboard - Demo</h1>
+
+      <div class="controls">
+        <h2>Configurações</h2>
+
+        <div class="input-group">
+          <label for="apiUrl">URL da API:</label>
+          <input type="text" id="apiUrl" value="http://localhost:5000" />
+        </div>
+
+        <div class="input-group">
+          <label for="dashboardType">Tipo de Dashboard:</label>
+          <select id="dashboardType">
+            <option value="user">Dashboard do Usuário</option>
+            <option value="company">Dashboard da Empresa</option>
+          </select>
+        </div>
+
+        <div class="input-group" id="userIdGroup">
+          <label for="userId">ID do Usuário:</label>
+          <input type="number" id="userId" value="1" min="1" />
+        </div>
+
+        <div class="input-group" id="companyIdGroup" style="display: none">
+          <label for="companyId">ID da Empresa:</label>
+          <input type="number" id="companyId" value="1" min="1" />
+        </div>
+
+        <button onclick="loadDashboard()">🔄 Carregar Dashboard</button>
+        <button onclick="testApiHealth()">💚 Testar Conexão</button>
+      </div>
+
+      <div id="results" class="dashboard"></div>
+    </div>
+
+    <script>
+      // Controle de exibição de campos
+      document
+        .getElementById("dashboardType")
+        .addEventListener("change", function () {
+          const type = this.value;
+          document.getElementById("userIdGroup").style.display =
+            type === "user" ? "block" : "none";
+          document.getElementById("companyIdGroup").style.display =
+            type === "company" ? "block" : "none";
+        });
+
+      // Testar conexão com a API
+      async function testApiHealth() {
+        const apiUrl = document.getElementById("apiUrl").value;
+        const resultsDiv = document.getElementById("results");
+
+        resultsDiv.innerHTML =
+          '<div class="card"><div class="loading">Testando conexão...</div></div>';
+
+        try {
+          const response = await fetch(`${apiUrl}/api/v1/health`);
+          const data = await response.json();
+
+          if (data.success) {
+            resultsDiv.innerHTML = `
+                        <div class="card">
+                            <h3>✅ Conexão bem-sucedida!</h3>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+          } else {
+            throw new Error("API retornou erro");
+          }
+        } catch (error) {
+          resultsDiv.innerHTML = `
+                    <div class="card">
+                        <div class="error">
+                            <strong>❌ Erro de conexão:</strong><br>
+                            ${error.message}<br><br>
+                            Certifique-se de que a API está rodando em ${apiUrl}
+                        </div>
+                    </div>
+                `;
+        }
+      }
+
+      // Carregar dashboard
+      async function loadDashboard() {
+        const apiUrl = document.getElementById("apiUrl").value;
+        const dashboardType = document.getElementById("dashboardType").value;
+        const resultsDiv = document.getElementById("results");
+
+        let endpoint;
+        if (dashboardType === "user") {
+          const userId = document.getElementById("userId").value;
+          endpoint = `${apiUrl}/api/v1/dashboard/user/${userId}/completo`;
+        } else {
+          const companyId = document.getElementById("companyId").value;
+          endpoint = `${apiUrl}/api/v1/dashboard/company/${companyId}/completo`;
+        }
+
+        resultsDiv.innerHTML =
+          '<div class="card"><div class="loading">⏳ Carregando dados...</div></div>';
+
+        try {
+          const response = await fetch(endpoint);
+          const result = await response.json();
+
+          if (!result.success) {
+            throw new Error(result.error || "Erro desconhecido");
+          }
+
+          const data = result.data;
+
+          if (dashboardType === "user") {
+            renderUserDashboard(data);
+          } else {
+            renderCompanyDashboard(data);
+          }
+        } catch (error) {
+          resultsDiv.innerHTML = `
+                    <div class="card">
+                        <div class="error">
+                            <strong>❌ Erro ao carregar dashboard:</strong><br>
+                            ${error.message}
+                        </div>
+                    </div>
+                `;
+        }
+      }
+
+      // Renderizar dashboard do usuário
+      function renderUserDashboard(data) {
+        const resultsDiv = document.getElementById("results");
+
+        let html = "";
+
+        // Bem-estar
+        if (data.bem_estar && data.bem_estar.length > 0) {
+          html += `
+                    <div class="card">
+                        <h3>📊 Evolução do Bem-Estar</h3>
+                        ${data.bem_estar
+                          .map(
+                            (item) => `
+                            <div class="data-item">
+                                <strong>Data:</strong> ${item.data_registro}<br>
+                                <strong>Estresse:</strong> ${item.nivel_estresse}/10<br>
+                                <strong>Motivação:</strong> ${item.nivel_motivacao}/10<br>
+                                <strong>Sono:</strong> ${item.qualidade_sono}/10
+                            </div>
+                        `
+                          )
+                          .join("")}
+                    </div>
+                `;
+        }
+
+        // Trilhas
+        if (data.trilhas && data.trilhas.length > 0) {
+          html += `
+                    <div class="card">
+                        <h3>🎯 Progresso nas Trilhas</h3>
+                        ${data.trilhas
+                          .map(
+                            (item) => `
+                            <div class="stat">
+                                <span class="stat-label">${item.nome_trilha}</span>
+                                <span class="stat-value">${item.progresso_percentual}% - ${item.status}</span>
+                            </div>
+                        `
+                          )
+                          .join("")}
+                    </div>
+                `;
+        }
+
+        // Recomendações
+        if (data.recomendacoes && data.recomendacoes.length > 0) {
+          html += `
+                    <div class="card">
+                        <h3>💡 Recomendações</h3>
+                        ${data.recomendacoes
+                          .slice(0, 5)
+                          .map(
+                            (item) => `
+                            <div class="data-item">
+                                <strong>${item.tipo}:</strong> ${item.motivo}<br>
+                                <small>${item.data_recomendacao}</small>
+                            </div>
+                        `
+                          )
+                          .join("")}
+                    </div>
+                `;
+        }
+
+        // JSON completo
+        html += `
+                <div class="card" style="grid-column: 1 / -1;">
+                    <h3>📄 Dados Brutos (JSON)</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+
+        resultsDiv.innerHTML = html;
+      }
+
+      // Renderizar dashboard da empresa
+      function renderCompanyDashboard(data) {
+        const resultsDiv = document.getElementById("results");
+
+        let html = "";
+
+        // Níveis de carreira
+        if (data.nivel_carreira && data.nivel_carreira.length > 0) {
+          html += `
+                    <div class="card">
+                        <h3>👥 Distribuição de Carreira</h3>
+                        ${data.nivel_carreira
+                          .map(
+                            (item) => `
+                            <div class="stat">
+                                <span class="stat-label">${item.nivel_carreira}</span>
+                                <span class="stat-value">${item.total} pessoas</span>
+                            </div>
+                        `
+                          )
+                          .join("")}
+                    </div>
+                `;
+        }
+
+        // Bem-estar médio
+        if (data.bem_estar && Object.keys(data.bem_estar).length > 0) {
+          html += `
+                    <div class="card">
+                        <h3>📊 Bem-Estar Médio</h3>
+                        <div class="stat">
+                            <span class="stat-label">Estresse</span>
+                            <span class="stat-value">${
+                              data.bem_estar.media_estresse || "N/A"
+                            }</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Motivação</span>
+                            <span class="stat-value">${
+                              data.bem_estar.media_motivacao || "N/A"
+                            }</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Sono</span>
+                            <span class="stat-value">${
+                              data.bem_estar.media_sono || "N/A"
+                            }</span>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // Trilhas mais utilizadas
+        if (data.trilhas && data.trilhas.length > 0) {
+          html += `
+                    <div class="card">
+                        <h3>🎯 Trilhas Mais Utilizadas</h3>
+                        ${data.trilhas
+                          .map(
+                            (item) => `
+                            <div class="stat">
+                                <span class="stat-label">${item.nome_trilha}</span>
+                                <span class="stat-value">${item.total_usuarios} usuários</span>
+                            </div>
+                        `
+                          )
+                          .join("")}
+                    </div>
+                `;
+        }
+
+        // Baixa motivação
+        if (data.baixa_motivacao && data.baixa_motivacao.length > 0) {
+          html += `
+                    <div class="card">
+                        <h3>⚠️ Baixa Motivação</h3>
+                        ${data.baixa_motivacao
+                          .slice(0, 5)
+                          .map(
+                            (item) => `
+                            <div class="data-item">
+                                <strong>${item.nome_completo}</strong><br>
+                                Motivação: ${item.nivel_motivacao}/10<br>
+                                <small>${item.data_registro}</small>
+                            </div>
+                        `
+                          )
+                          .join("")}
+                    </div>
+                `;
+        }
+
+        // JSON completo
+        html += `
+                <div class="card" style="grid-column: 1 / -1;">
+                    <h3>📄 Dados Brutos (JSON)</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+
+        resultsDiv.innerHTML = html;
+      }
+
+      // Carregar dashboard ao iniciar
+      window.addEventListener("load", function () {
+        testApiHealth();
+      });
+    </script>
+  </body>
+</html>
