@@ -2,6 +2,11 @@
 
 API REST para exposição de dados e dashboards do sistema UpPath.
 
+## 🌐 URL Base
+
+- **Produção (Render)**: `https://uppath-python.onrender.com`
+- **Desenvolvimento Local**: `http://localhost:5000`
+
 ## Instalação
 
 ```bash
@@ -55,38 +60,57 @@ A API estará disponível em: `http://localhost:5000`
 
 ```bash
 # Health check
-curl http://localhost:5000/api/v1/health
+curl https://uppath-python.onrender.com/api/v1/health
 
 # Dashboard completo do usuário ID 1
-curl http://localhost:5000/api/v1/dashboard/user/1/completo
+curl https://uppath-python.onrender.com/api/v1/dashboard/user/1/completo
 
 # Dashboard completo da empresa ID 1
-curl http://localhost:5000/api/v1/dashboard/company/1/completo
+curl https://uppath-python.onrender.com/api/v1/dashboard/company/1/completo
 
-# Lista de empresas
-curl http://localhost:5000/api/v1/empresas/contagem
+# Bem-estar do usuário
+curl https://uppath-python.onrender.com/api/v1/dashboard/user/1/bem-estar
+
+# Trilhas do usuário
+curl https://uppath-python.onrender.com/api/v1/dashboard/user/1/trilhas
+
+# Distribuição de níveis de carreira da empresa
+curl https://uppath-python.onrender.com/api/v1/dashboard/company/1/nivel-carreira
 ```
 
 ### Usando JavaScript (Fetch API)
 
 ```javascript
-// Dashboard do usuário
-fetch("http://localhost:5000/api/v1/dashboard/user/1/completo")
+const API_URL = "https://uppath-python.onrender.com";
+
+// Dashboard completo do usuário
+fetch(`${API_URL}/api/v1/dashboard/user/1/completo`)
   .then((response) => response.json())
   .then((data) => {
     console.log("Dashboard do usuário:", data);
-    // Atualizar gráficos aqui
+    // Atualizar gráficos de bem-estar, trilhas, recomendações
+    updateUserCharts(data.data);
   })
   .catch((error) => console.error("Erro:", error));
 
-// Dashboard da empresa
-fetch("http://localhost:5000/api/v1/dashboard/company/1/completo")
+// Dashboard completo da empresa
+fetch(`${API_URL}/api/v1/dashboard/company/1/completo`)
   .then((response) => response.json())
   .then((data) => {
     console.log("Dashboard da empresa:", data);
-    // Atualizar gráficos aqui
+    // Atualizar gráficos corporativos
+    updateCompanyCharts(data.data);
   })
   .catch((error) => console.error("Erro:", error));
+
+// Consulta específica: Bem-estar do usuário
+async function getBemEstarUsuario(userId) {
+  const response = await fetch(
+    `${API_URL}/api/v1/dashboard/user/${userId}/bem-estar`
+  );
+  const data = await response.json();
+  return data.data;
+}
 ```
 
 ### Usando Python (requests)
@@ -94,15 +118,32 @@ fetch("http://localhost:5000/api/v1/dashboard/company/1/completo")
 ```python
 import requests
 
-# Dashboard do usuário
-response = requests.get('http://localhost:5000/api/v1/dashboard/user/1/completo')
-dashboard = response.json()
-print(dashboard['data'])
+API_URL = "https://uppath-python.onrender.com"
 
-# Dashboard da empresa
-response = requests.get('http://localhost:5000/api/v1/dashboard/company/1/completo')
-dashboard = response.json()
-print(dashboard['data'])
+# Dashboard completo do usuário
+response = requests.get(f'{API_URL}/api/v1/dashboard/user/1/completo')
+if response.status_code == 200:
+    dashboard = response.json()
+    print(dashboard['data'])
+else:
+    print(f"Erro: {response.status_code}")
+
+# Dashboard completo da empresa
+response = requests.get(f'{API_URL}/api/v1/dashboard/company/1/completo')
+if response.status_code == 200:
+    dashboard = response.json()
+    print(dashboard['data'])
+
+# Função helper para facilitar chamadas
+def get_user_dashboard(user_id, endpoint='completo'):
+    """Consulta endpoint específico do dashboard do usuário."""
+    url = f"{API_URL}/api/v1/dashboard/user/{user_id}/{endpoint}"
+    response = requests.get(url)
+    return response.json() if response.status_code == 200 else None
+
+# Uso
+bem_estar = get_user_dashboard(1, 'bem-estar')
+trilhas = get_user_dashboard(1, 'trilhas')
 ```
 
 ## Formato de Resposta

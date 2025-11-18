@@ -2,6 +2,18 @@
 
 Sistema Python CRUD completo para gerenciamento de usuários e empresas com Oracle Database, desenvolvido para a disciplina Computational Thinking Using Python.
 
+## 🌐 API em Produção
+
+**A API REST está disponível em:** `https://uppath-python.onrender.com`
+
+- 🚀 **Dashboard do Usuário:** `/api/v1/dashboard/user/{id}/completo`
+- 🏢 **Dashboard da Empresa:** `/api/v1/dashboard/company/{id}/completo`
+- 💚 **Health Check:** `/api/v1/health`
+
+📖 **Documentação completa:** [API Docs](src/api/docs/API_DOCUMENTATION.md)
+
+---
+
 ## 🎯 Características
 
 - ✅ **CRUD Completo**: Create, Read, Update, Delete de usuários
@@ -76,13 +88,24 @@ O sistema irá:
 
 ### Modo 2: API REST para Frontend
 
+**Produção (Render):**
+
+A API está disponível em: `https://uppath-python.onrender.com`
+
+**Desenvolvimento Local:**
+
 ```bash
 python src/api/app.py
 ```
 
-A API estará disponível em: `http://localhost:5000`
+A API local estará em: `http://localhost:5000`
 
-Documentação completa: [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
+**Documentação Completa:** [API Documentation](src/api/docs/API_DOCUMENTATION.md)
+
+**Endpoints Principais:**
+- `GET /api/v1/health` - Verificação de saúde
+- `GET /api/v1/dashboard/user/{id}/completo` - Dashboard do usuário
+- `GET /api/v1/dashboard/company/{id}/completo` - Dashboard da empresa
 
 ### Modo 3: Demo Dashboard HTML
 
