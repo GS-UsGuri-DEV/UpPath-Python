@@ -16,6 +16,92 @@ def _json_serializer(obj):
     return str(obj)
 
 
+def _pretty_print(data):
+    """Imprime de forma amigável estruturas retornadas pelas consultas.
+
+    - Lista de dicts -> tabela
+    - Dict -> chaves: valores
+    - Lista de valores simples -> linhas enumeradas
+    """
+    if data is None:
+        ColorMsg.print_warning('Nenhum dado retornado.')
+        return
+
+    # Lista vazia
+    if isinstance(data, list) and len(data) == 0:
+        ColorMsg.print_warning('Nenhum registro encontrado.')
+        return
+
+    # Lista de dicionários -> tabela
+    if isinstance(data, list) and all(isinstance(d, dict) for d in data):
+        # coletar colunas como união de chaves (mantendo ordem aparente)
+        cols = []
+        for row in data:
+            for k in row.keys():
+                if k not in cols:
+                    cols.append(k)
+
+        def fmt_value(v):
+            if v is None:
+                return ''
+            # datetime -> iso
+            if isinstance(v, (datetime.datetime, datetime.date)):
+                return v.isoformat()
+            return str(v)
+
+        # determinar larguras e tipos (numérico ou não)
+        widths = {c: len(c) for c in cols}
+        is_numeric = {c: True for c in cols}
+        for row in data:
+            for c in cols:
+                s = fmt_value(row.get(c, ''))
+                widths[c] = max(widths[c], len(s))
+                # checar se ainda pode ser numérico
+                if s == '':
+                    continue
+                try:
+                    float(s)
+                except Exception:
+                    is_numeric[c] = False
+
+        # cabeçalho
+        header_parts = []
+        for c in cols:
+            header_parts.append(
+                c.rjust(widths[c]) if is_numeric[c] else c.ljust(widths[c])
+            )
+        header = ' | '.join(header_parts)
+        sep = '-+-'.join('-' * widths[c] for c in cols)
+        ColorMsg.print_info(header)
+        ColorMsg.print_info(sep)
+
+        for row in data:
+            parts = []
+            for c in cols:
+                s = fmt_value(row.get(c, ''))
+                if is_numeric[c]:
+                    parts.append(s.rjust(widths[c]))
+                else:
+                    parts.append(s.ljust(widths[c]))
+            ColorMsg.print_info(' | '.join(parts))
+        return
+
+    # Dicionário simples
+    if isinstance(data, dict):
+        for k, v in data.items():
+            ColorMsg.print_info(f'{k}: {v}')
+        return
+
+    # Lista de valores simples
+    if isinstance(data, list):
+        for i, v in enumerate(data, 1):
+            ColorMsg.print_info(f'{i}. {v}')
+        return
+
+    # Fallback
+    ColorMsg.print_info(str(data))
+
+
 def querries():
     """Menu de consultas customizadas, incluindo dashboards."""
     ColorMsg.print_menu('\n' + '=' * 60)
@@ -23,6 +109,7 @@ def querries():
     ColorMsg.print_menu('=' * 60)
     ColorMsg.print_menu('1 - Painel individual (usuário)')
     ColorMsg.print_menu('2 - Painel corporativo (empresa)')
+    ColorMsg.print_menu('3 - Empresas (contagem de funcionários)')
     ColorMsg.print_menu('0 - Voltar ao menu principal')
     ColorMsg.print_menu('=' * 60)
     opcao = ColorMsg.input_prompt('Escolha uma opção: ').strip()
@@ -30,6 +117,29 @@ def querries():
         querries_usuario()
     elif opcao == '2':
         painel_corporativo()
+    elif opcao == '3':
+        # Consulta read-only: lista de empresas com contagem de funcionários
+        with db.get_cursor() as cursor:
+            dados = consultas.consulta_empresas_com_contagem(cursor)
+            _pretty_print(dados)
+            export = (
+                ColorMsg.input_prompt('Exportar resultado para JSON? (s/n): ')
+                .strip()
+                .lower()
+            )
+            if export in ('s', 'sim', 'y', 'yes'):
+                nome_arquivo = ColorMsg.input_prompt(
+                    'Nome do arquivo (ex: empresas_contagem.json): '
+                ).strip()
+                pasta_data = os.path.join(os.path.dirname(__file__), '..', 'data')
+                pasta_data = os.path.abspath(pasta_data)
+                os.makedirs(pasta_data, exist_ok=True)
+                caminho_arquivo = os.path.join(pasta_data, nome_arquivo)
+                with open(caminho_arquivo, 'w', encoding='utf-8') as f:
+                    json.dump(
+                        dados, f, ensure_ascii=False, indent=2, default=_json_serializer
+                    )
+                ColorMsg.print_success(f'✓ Exportado para {caminho_arquivo}')
     elif opcao == '0':
         return
     else:
@@ -69,9 +179,7 @@ def painel_corporativo():
         else:
             ColorMsg.print_error('✗ Opção inválida.')
             return
-        ColorMsg.print_info(
-            json.dumps(dados, ensure_ascii=False, indent=2, default=_json_serializer)
-        )
+        _pretty_print(dados)
         export = (
             ColorMsg.input_prompt('Exportar resultado para JSON? (s/n): ')
             .strip()
@@ -120,9 +228,7 @@ def querries_usuario():
         else:
             ColorMsg.print_error('✗ Opção inválida.')
             return
-        ColorMsg.print_info(
-            json.dumps(dados, ensure_ascii=False, indent=2, default=_json_serializer)
-        )
+        _pretty_print(dados)
         export = (
             ColorMsg.input_prompt('Exportar resultado para JSON? (s/n): ')
             .strip()

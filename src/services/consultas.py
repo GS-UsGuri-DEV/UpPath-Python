@@ -203,3 +203,24 @@ def consulta_funcionarios_baixa_motivacao(
         return [dict(zip(colunas, linha)) for linha in cursor.fetchall()]
     except Exception as e:
         return [{'error': str(e)}]
+
+
+def consulta_empresas_com_contagem(cursor) -> List[Dict[str, Any]]:
+    """
+    Lista todas as empresas com a quantidade de usuários vinculados.
+    Retorna lista de dicts: [{id_empresa, nome_empresa, total_usuarios}, ...]
+    """
+    try:
+        cursor.execute(
+            """
+            SELECT e.id_empresa, e.nome_empresa, NVL(COUNT(u.id_usuario), 0) AS total_usuarios
+            FROM empresas e
+            LEFT JOIN usuarios u ON u.id_empresa = e.id_empresa
+            GROUP BY e.id_empresa, e.nome_empresa
+            ORDER BY total_usuarios DESC, e.nome_empresa
+            """
+        )
+        colunas = [col[0].lower() for col in cursor.description]
+        return [dict(zip(colunas, linha)) for linha in cursor.fetchall()]
+    except Exception as e:
+        return [{'error': str(e)}]

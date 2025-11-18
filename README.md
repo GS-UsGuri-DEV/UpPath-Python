@@ -75,24 +75,19 @@ O sistema irá:
 ### Menus Interativos
 
 **Menu Principal:**
+
 ```
-1 - CRUD Usuários
-2 - CRUD Empresas
-3 - Consultas e Dashboards
+1 - Criar usuário
+2 - Listar usuários
+3 - Buscar usuário por ID
+4 - Atualizar usuário
+5 - Deletar usuário
+6 - Querries
 0 - Sair
 ```
 
-**Menu Empresas:**
-```
-1 - Criar empresa
-2 - Listar empresas
-3 - Buscar empresa por ID
-4 - Atualizar empresa
-5 - Deletar empresa
-0 - Voltar
-```
-
 **Menu Usuários:**
+
 ```
 1 - Criar usuário
 2 - Listar usuários
@@ -102,8 +97,19 @@ O sistema irá:
 0 - Voltar
 ```
 
+**Menu Querries:**
+
+```
+1 - Painel individual (usuário)
+2 - Painel corporativo (empresa)
+3 - Empresas (contagem de funcionários)
+0 - Voltar ao menu principal
+```
+
+
 **Consultas e Exportação:**
 O sistema oferece pelo menos 3 consultas relevantes ao banco Oracle, com opção de exportar o resultado para JSON:
+
 - Distribuição de níveis de carreira por empresa
 - Média de bem-estar da empresa
 - Evolução do bem-estar do usuário
@@ -126,7 +132,6 @@ UpPath-Python/
 │   │   └── exceptions.py
 │   ├── ui/                    # Interface de usuário (menus e CRUD)
 │   │   ├── crud_usuarios.py
-│   │   ├── crud_empresas.py
 │   │   └── painel_queries.py
 │   └── utils/                 # Utilitários (validações, mensagens, helpers)
 │       ├── color_msg.py
@@ -231,7 +236,7 @@ CREATE TABLE bem_estar (
 	observacao VARCHAR2(200),
 	CONSTRAINT bem_estar_PK PRIMARY KEY (id_registro),
 	CONSTRAINT bem_estar_usuarios_FK FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario),
-	CONSTRAINT ck_nivel_estresse CHECK (nivel_estresse BETWEEN 0 AND 10),																						
+	CONSTRAINT ck_nivel_estresse CHECK (nivel_estresse BETWEEN 0 AND 10),
 	CONSTRAINT ck_nivel_motivacao CHECK (nivel_motivacao BETWEEN 0 AND 10),
 	CONSTRAINT ck_qualidade_sono CHECK (qualidade_sono BETWEEN 0 AND 10)
 );
@@ -247,7 +252,7 @@ CREATE TABLE recomendacoes (
 	CONSTRAINT recomendacoes_usuarios_FK FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario),
 	CONSTRAINT ck_tipo_recomendacao CHECK (tipo IN ('Curso', 'Trilha'))
 );
-```	
+```
 
 ## 🔐 Segurança
 
