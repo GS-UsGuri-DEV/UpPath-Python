@@ -6,10 +6,13 @@ Sistema Python CRUD completo para gerenciamento de usuários e empresas com Orac
 
 - ✅ **CRUD Completo**: Create, Read, Update, Delete de usuários
 - ✅ **Menu Interativo**: Interface terminal amigável para todas as operações
+- ✅ **API REST**: Endpoints JSON para integração com frontend (Flask)
 - ✅ **Validações**: Entrada de dados validada (email, datas, tamanhos, CNPJ, etc)
 - ✅ **Tratamento de Exceções**: Erros tratados com mensagens claras e robustez
 - ✅ **Modularização**: Código organizado em funções reutilizáveis
 - ✅ **Exportação de Consultas**: Resultados de consultas podem ser exportados para arquivos JSON
+- ✅ **Dashboards**: Painéis individuais (usuário) e corporativos (empresa)
+- ✅ **CORS Habilitado**: API configurada para acesso cross-origin
 - ✅ **Logging**: Auditoria de operações
 - ✅ **Connection Pooling**: Performance otimizada para produção
 - ✅ **Segurança**: Senhas armazenadas com hash SHA-256
@@ -59,10 +62,10 @@ export ORACLE_DSN=localhost:1521/XEPDB1
 
 ## 🚀 Como Usar
 
-### Execução via main.py (Recomendado)
+### Modo 1: Sistema CRUD via Terminal (Recomendado para CLI)
 
 ```bash
-python main.py
+python src/main.py
 ```
 
 O sistema irá:
@@ -70,6 +73,20 @@ O sistema irá:
 1. Inicializar o banco de dados (criar tabelas e sequences)
 2. Configurar pool de conexões
 3. Exibir o menu interativo
+
+### Modo 2: API REST para Frontend
+
+```bash
+python src/api/app.py
+```
+
+A API estará disponível em: `http://localhost:5000`
+
+Documentação completa: [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
+
+### Modo 3: Demo Dashboard HTML
+
+Abra o arquivo `dashboard_demo.html` no navegador para testar a integração com a API em tempo real.
 
 ### Menus Interativos
 
@@ -105,7 +122,6 @@ O sistema irá:
 0 - Voltar ao menu principal
 ```
 
-
 **Consultas e Exportação:**
 O sistema oferece pelo menos 3 consultas relevantes ao banco Oracle, com opção de exportar o resultado para JSON:
 
@@ -118,8 +134,12 @@ O sistema oferece pelo menos 3 consultas relevantes ao banco Oracle, com opção
 ```
 UpPath-Python/
 ├── src/
-│   ├── main.py                # Ponto de entrada principal
+│   ├── main.py                # Ponto de entrada principal (CLI)
 │   ├── config.py              # Configurações globais
+│   ├── api/                   # API REST
+│   │   ├── __init__.py
+│   │   ├── app.py            # Aplicação Flask
+│   │   └── routes.py         # Endpoints da API
 │   ├── data/                  # Pasta para arquivos exportados e dados
 │   ├── models/                # Modelos de dados
 │   ├── services/              # DAO, storage, consultas, exceções
@@ -137,8 +157,11 @@ UpPath-Python/
 │       ├── db_utils.py
 │       ├── validators.py
 │       └── __init__.py
+├── test_api.py                # Script de teste da API
+├── dashboard_demo.html        # Demo de dashboard em HTML/JS
+├── API_DOCUMENTATION.md       # Documentação completa da API
 ├── requirements.txt           # Dependências Python
-└──  README.md                  # Esta documentação
+└── README.md                  # Esta documentação
 ```
 
 ## 🗄️ Modelo de Dados
