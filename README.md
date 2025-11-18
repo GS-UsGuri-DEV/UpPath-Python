@@ -5,7 +5,6 @@ Sistema Python CRUD completo para gerenciamento de usuários e empresas com Orac
 ## 🎯 Características
 
 - ✅ **CRUD Completo**: Create, Read, Update, Delete de usuários
-- ✅ **CRUD Empresas**: Gerencie empresas clientes (B2B) com validação de CNPJ e email
 - ✅ **Menu Interativo**: Interface terminal amigável para todas as operações
 - ✅ **Validações**: Entrada de dados validada (email, datas, tamanhos, CNPJ, etc)
 - ✅ **Tratamento de Exceções**: Erros tratados com mensagens claras e robustez
