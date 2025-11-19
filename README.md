@@ -125,17 +125,6 @@ Abra o arquivo `dashboard_demo.html` no navegador para testar a integração com
 0 - Sair
 ```
 
-**Menu Usuários:**
-
-```
-1 - Criar usuário
-2 - Listar usuários
-3 - Buscar usuário por ID
-4 - Atualizar usuário
-5 - Deletar usuário
-0 - Voltar
-```
-
 **Menu Querries:**
 
 ```
