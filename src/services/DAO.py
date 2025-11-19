@@ -19,9 +19,7 @@ logging.basicConfig(
 def _connect(conn_info: Dict = None):
     """Cria e retorna uma conexão direta com o banco Oracle.
 
-    Nota: o suporte a pool foi removido para simplificar o uso em ambientes
-    onde o pool não é necessário. Quem usar esta função deve fechar a
-    conexão com `conn.close()` quando terminar.
+    Quem usar esta função deve fechar a conexão com `conn.close()` quando terminar.
     """
     if oracledb is None:
         raise ModuleNotFoundError('oracledb não encontrado')

@@ -26,7 +26,6 @@ Sistema Python CRUD completo para gerenciamento de usuários e empresas com Orac
 - ✅ **Dashboards**: Painéis individuais (usuário) e corporativos (empresa)
 - ✅ **CORS Habilitado**: API configurada para acesso cross-origin
 - ✅ **Logging**: Auditoria de operações
-- ✅ **Connection Pooling**: Performance otimizada para produção
 - ✅ **Segurança**: Senhas armazenadas com hash SHA-256
 - ✅ **Geração de IDs**: Sequence Oracle com fallback seguro
 
@@ -83,8 +82,7 @@ python src/main.py
 O sistema irá:
 
 1. Inicializar o banco de dados (criar tabelas e sequences)
-2. Configurar pool de conexões
-3. Exibir o menu interativo
+2. Exibir o menu interativo
 
 ### Modo 2: API REST para Frontend
 

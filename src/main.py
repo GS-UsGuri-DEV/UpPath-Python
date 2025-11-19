@@ -2,7 +2,7 @@
 main.py
 
 Ponto de entrada principal do sistema UpPath CRUD.
-Inicializa o banco de dados e pool de conexões antes de exibir o menu.
+Inicializa o banco de dados antes de exibir o menu.
 """
 
 import sys
@@ -38,7 +38,6 @@ def main():
         ColorMsg.print_info('\nInicializando banco de dados...')
         db.init_table()
         ColorMsg.print_success('OK - Banco de dados inicializado com sucesso!')
-        # Operando sem pool de conexões (conexões diretas)
     except Exception as e:
         ColorMsg.print_error(f'\nERRO ao inicializar banco de dados: {e}')
         ColorMsg.print_warning(
