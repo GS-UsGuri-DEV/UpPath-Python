@@ -81,21 +81,29 @@ def validate_date(
     """
     if not date_str or not date_str.strip():
         if required:
-            return None, 'Data é obrigatória'
+            return None, 'Data de nascimento é obrigatória'
         return None, None
 
     s = date_str.strip()
+    dt = None
     # Tenta formato BR primeiro
     try:
-        return datetime.strptime(s, DATE_FORMAT).date(), None
+        dt = datetime.strptime(s, DATE_FORMAT).date()
     except ValueError:
         pass
 
-    # Tenta formato ISO
-    try:
-        return datetime.strptime(s, DATE_FORMAT_ISO).date(), None
-    except ValueError:
-        return None, f'Data inválida. Use o formato {DATE_FORMAT} (ex: 31/12/1990)'
+    if dt is None:
+        try:
+            dt = datetime.strptime(s, DATE_FORMAT_ISO).date()
+        except ValueError:
+            return None, f'Data inválida. Use o formato {DATE_FORMAT} (ex: 31/12/1990)'
+
+    # Validação de faixa
+    if dt.year < 1900:
+        return None, 'Ano de nascimento não pode ser anterior a 1900.'
+    if dt > date.today():
+        return None, 'Data de nascimento não pode ser no futuro.'
+    return dt, None
 
 
 def validate_id(

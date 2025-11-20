@@ -79,6 +79,8 @@ def main():
         elif opcao == '0':
             ColorMsg.print_info('\nEncerrando sistema...')
             break
+        else:
+            ColorMsg.print_error('✗ Opção inválida. Tente novamente.')
 
 
 if __name__ == '__main__':

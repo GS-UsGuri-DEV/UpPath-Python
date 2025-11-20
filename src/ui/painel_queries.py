@@ -25,12 +25,12 @@ def _pretty_print(data):
     """
     if data is None:
         ColorMsg.print_warning('Nenhum dado retornado.')
-        return
+        return False
 
     # Lista vazia
     if isinstance(data, list) and len(data) == 0:
         ColorMsg.print_warning('Nenhum registro encontrado.')
-        return
+        return False
 
     # Lista de dicionários -> tabela
     if isinstance(data, list) and all(isinstance(d, dict) for d in data):
@@ -104,24 +104,96 @@ def _pretty_print(data):
 
 def querries():
     """Menu de consultas customizadas, incluindo dashboards."""
-    ColorMsg.print_menu('\n' + '=' * 60)
-    ColorMsg.print_menu('CONSULTAS E DASHBOARDS')
-    ColorMsg.print_menu('=' * 60)
-    ColorMsg.print_menu('1 - Painel individual (usuário)')
-    ColorMsg.print_menu('2 - Painel corporativo (empresa)')
-    ColorMsg.print_menu('3 - Empresas (contagem de funcionários)')
-    ColorMsg.print_menu('0 - Voltar ao menu principal')
-    ColorMsg.print_menu('=' * 60)
-    opcao = ColorMsg.input_prompt('Escolha uma opção: ').strip()
-    if opcao == '1':
-        querries_usuario()
-    elif opcao == '2':
-        painel_corporativo()
-    elif opcao == '3':
-        # Consulta read-only: lista de empresas com contagem de funcionários
+    while True:
+        ColorMsg.print_menu('\n' + '=' * 60)
+        ColorMsg.print_menu('CONSULTAS E DASHBOARDS')
+        ColorMsg.print_menu('=' * 60)
+        ColorMsg.print_menu('1 - Painel individual (usuário)')
+        ColorMsg.print_menu('2 - Painel corporativo (empresa)')
+        ColorMsg.print_menu('3 - Empresas (contagem de funcionários)')
+        ColorMsg.print_menu('0 - Voltar ao menu principal')
+        ColorMsg.print_menu('=' * 60)
+        opcao = ColorMsg.input_prompt('Escolha uma opção: ').strip()
+        if opcao == '1':
+            querries_usuario()
+            continue
+        elif opcao == '2':
+            painel_corporativo()
+            continue
+        elif opcao == '3':
+            with db.get_cursor() as cursor:
+                dados = consultas.consulta_empresas_com_contagem(cursor)
+                if _pretty_print(dados) is False:
+                    continue
+                export = (
+                    ColorMsg.input_prompt('Exportar resultado para JSON? (s/n): ')
+                    .strip()
+                    .lower()
+                )
+                if export in ('s', 'sim', 'y', 'yes'):
+                    nome_arquivo = ColorMsg.input_prompt(
+                        'Nome do arquivo (ex: empresas_contagem.json): '
+                    ).strip()
+                    pasta_data = os.path.join(os.path.dirname(__file__), '..', 'data')
+                    pasta_data = os.path.abspath(pasta_data)
+                    os.makedirs(pasta_data, exist_ok=True)
+                    caminho_arquivo = os.path.join(pasta_data, nome_arquivo)
+                    with open(caminho_arquivo, 'w', encoding='utf-8') as f:
+                        json.dump(
+                            dados, f, ensure_ascii=False, indent=2, default=_json_serializer
+                        )
+                    ColorMsg.print_success(f'✓ Exportado para {caminho_arquivo}')
+            continue
+        elif opcao == '0':
+            return
+        else:
+            ColorMsg.print_error('✗ Opção inválida. Tente novamente.')
+
+
+def painel_corporativo():
+    """Menu para consultas do painel corporativo da empresa."""
+    while True:
+        ColorMsg.print_menu('\n' + '=' * 60)
+        ColorMsg.print_menu('PAINEL CORPORATIVO')
+        ColorMsg.print_menu('=' * 60)
+        ColorMsg.print_menu('1 - Distribuição de níveis de carreira')
+        ColorMsg.print_menu('2 - Média de bem-estar da empresa')
+        ColorMsg.print_menu('3 - Trilhas mais utilizadas')
+        ColorMsg.print_menu('4 - Funcionários com baixa motivação (<5)')
+        ColorMsg.print_menu('0 - Voltar')
+        ColorMsg.print_menu('=' * 60)
+        # Mostrar empresas disponíveis antes de pedir o ID
+        empresas = db.list_empresas() if hasattr(db, 'list_empresas') else []
+        if empresas:
+            ColorMsg.print_info('\nEmpresas disponíveis:')
+            for eid, nome in empresas:
+                ColorMsg.print_info(f'  {eid} - {nome}')
+        else:
+            ColorMsg.print_warning('Nenhuma empresa cadastrada.')
+        opcao = ColorMsg.input_prompt('Escolha uma opção: ').strip()
+        if opcao == '0':
+            return
+        if opcao not in ('1', '2', '3', '4'):
+            ColorMsg.print_error('✗ Opção inválida. Tente novamente.')
+            continue
+        id_empresa_str = ColorMsg.input_prompt('ID da empresa: ').strip()
+        id_empresa, err = validate_id(id_empresa_str, 'ID da empresa')
+        if err or id_empresa is None:
+            ColorMsg.print_error(f'✗ {err or "ID inválido"}')
+            continue
         with db.get_cursor() as cursor:
-            dados = consultas.consulta_empresas_com_contagem(cursor)
-            _pretty_print(dados)
+            if opcao == '1':
+                dados = consultas.consulta_distribuicao_nivel_carreira(cursor, id_empresa)
+            elif opcao == '2':
+                dados = consultas.consulta_media_bem_estar_empresa(cursor, id_empresa)
+            elif opcao == '3':
+                dados = consultas.consulta_trilhas_mais_utilizadas_empresa(
+                    cursor, id_empresa
+                )
+            elif opcao == '4':
+                dados = consultas.consulta_funcionarios_baixa_motivacao(cursor, id_empresa)
+            if _pretty_print(dados) is False:
+                continue
             export = (
                 ColorMsg.input_prompt('Exportar resultado para JSON? (s/n): ')
                 .strip()
@@ -129,7 +201,7 @@ def querries():
             )
             if export in ('s', 'sim', 'y', 'yes'):
                 nome_arquivo = ColorMsg.input_prompt(
-                    'Nome do arquivo (ex: empresas_contagem.json): '
+                    'Nome do arquivo (ex: painel_empresa.json): '
                 ).strip()
                 pasta_data = os.path.join(os.path.dirname(__file__), '..', 'data')
                 pasta_data = os.path.abspath(pasta_data)
@@ -140,110 +212,55 @@ def querries():
                         dados, f, ensure_ascii=False, indent=2, default=_json_serializer
                     )
                 ColorMsg.print_success(f'✓ Exportado para {caminho_arquivo}')
-    elif opcao == '0':
-        return
-    else:
-        ColorMsg.print_error('✗ Opção inválida.')
-
-
-def painel_corporativo():
-    """Menu para consultas do painel corporativo da empresa."""
-    ColorMsg.print_menu('\n' + '=' * 60)
-    ColorMsg.print_menu('PAINEL CORPORATIVO')
-    ColorMsg.print_menu('=' * 60)
-    ColorMsg.print_menu('1 - Distribuição de níveis de carreira')
-    ColorMsg.print_menu('2 - Média de bem-estar da empresa')
-    ColorMsg.print_menu('3 - Trilhas mais utilizadas')
-    ColorMsg.print_menu('4 - Funcionários com baixa motivação (<5)')
-    ColorMsg.print_menu('0 - Voltar')
-    ColorMsg.print_menu('=' * 60)
-    opcao = ColorMsg.input_prompt('Escolha uma opção: ').strip()
-    id_empresa_str = ColorMsg.input_prompt('ID da empresa: ').strip()
-    id_empresa, err = validate_id(id_empresa_str, 'ID da empresa')
-    if err or id_empresa is None:
-        ColorMsg.print_error(f'✗ {err or "ID inválido"}')
-        return
-    with db.get_cursor() as cursor:
-        if opcao == '1':
-            dados = consultas.consulta_distribuicao_nivel_carreira(cursor, id_empresa)
-        elif opcao == '2':
-            dados = consultas.consulta_media_bem_estar_empresa(cursor, id_empresa)
-        elif opcao == '3':
-            dados = consultas.consulta_trilhas_mais_utilizadas_empresa(
-                cursor, id_empresa
-            )
-        elif opcao == '4':
-            dados = consultas.consulta_funcionarios_baixa_motivacao(cursor, id_empresa)
-        elif opcao == '0':
-            return
-        else:
-            ColorMsg.print_error('✗ Opção inválida.')
-            return
-        _pretty_print(dados)
-        export = (
-            ColorMsg.input_prompt('Exportar resultado para JSON? (s/n): ')
-            .strip()
-            .lower()
-        )
-        if export in ('s', 'sim', 'y', 'yes'):
-            nome_arquivo = ColorMsg.input_prompt(
-                'Nome do arquivo (ex: painel_empresa.json): '
-            ).strip()
-            pasta_data = os.path.join(os.path.dirname(__file__), '..', 'data')
-            pasta_data = os.path.abspath(pasta_data)
-            os.makedirs(pasta_data, exist_ok=True)
-            caminho_arquivo = os.path.join(pasta_data, nome_arquivo)
-            with open(caminho_arquivo, 'w', encoding='utf-8') as f:
-                json.dump(
-                    dados, f, ensure_ascii=False, indent=2, default=_json_serializer
-                )
-            ColorMsg.print_success(f'✓ Exportado para {caminho_arquivo}')
 
 
 def querries_usuario():
     """Menu para consultas do painel individual do usuário."""
-    ColorMsg.print_menu('\n' + '=' * 60)
-    ColorMsg.print_menu('PAINEL do Usuário')
-    ColorMsg.print_menu('=' * 60)
-    ColorMsg.print_menu('1 - Evolução do bem-estar')
-    ColorMsg.print_menu('2 - Progresso nas trilhas')
-    ColorMsg.print_menu('3 - Recomendações recebidas')
-    ColorMsg.print_menu('0 - Voltar')
-    ColorMsg.print_menu('=' * 60)
-    opcao = ColorMsg.input_prompt('Escolha uma opção: ').strip()
-    id_user_str = ColorMsg.input_prompt('ID do usuário: ').strip()
-    id_user, err = validate_id(id_user_str, 'ID do usuário')
-    if err or id_user is None:
-        ColorMsg.print_error(f'✗ {err or "ID inválido"}')
-        return
-    with db.get_cursor() as cursor:
-        if opcao == '1':
-            dados = consultas.consulta_bem_estar_user(cursor, id_user)
-        elif opcao == '2':
-            dados = consultas.consulta_progresso_trilhas_user(cursor, id_user)
-        elif opcao == '3':
-            dados = consultas.consulta_recomendacoes_user(cursor, id_user)
-        elif opcao == '0':
+    while True:
+        ColorMsg.print_menu('\n' + '=' * 60)
+        ColorMsg.print_menu('PAINEL do Usuário')
+        ColorMsg.print_menu('=' * 60)
+        ColorMsg.print_menu('1 - Evolução do bem-estar')
+        ColorMsg.print_menu('2 - Progresso nas trilhas')
+        ColorMsg.print_menu('3 - Recomendações recebidas')
+        ColorMsg.print_menu('0 - Voltar')
+        ColorMsg.print_menu('=' * 60)
+        opcao = ColorMsg.input_prompt('Escolha uma opção: ').strip()
+        if opcao == '0':
             return
-        else:
-            ColorMsg.print_error('✗ Opção inválida.')
-            return
-        _pretty_print(dados)
-        export = (
-            ColorMsg.input_prompt('Exportar resultado para JSON? (s/n): ')
-            .strip()
-            .lower()
-        )
-        if export in ('s', 'sim', 'y', 'yes'):
-            nome_arquivo = ColorMsg.input_prompt(
-                'Nome do arquivo (ex: painel_user.json): '
-            ).strip()
-            pasta_data = os.path.join(os.path.dirname(__file__), '..', 'data')
-            pasta_data = os.path.abspath(pasta_data)
-            os.makedirs(pasta_data, exist_ok=True)
-            caminho_arquivo = os.path.join(pasta_data, nome_arquivo)
-            with open(caminho_arquivo, 'w', encoding='utf-8') as f:
-                json.dump(
-                    dados, f, ensure_ascii=False, indent=2, default=_json_serializer
-                )
-            ColorMsg.print_success(f'✓ Exportado para {caminho_arquivo}')
+        if opcao not in ('1', '2', '3'):
+            ColorMsg.print_error('✗ Opção inválida. Tente novamente.')
+            continue
+        id_user_str = ColorMsg.input_prompt('ID do usuário: ').strip()
+        id_user, err = validate_id(id_user_str, 'ID do usuário')
+        if err or id_user is None:
+            ColorMsg.print_error(f'✗ {err or "ID inválido"}')
+            continue
+        with db.get_cursor() as cursor:
+            if opcao == '1':
+                dados = consultas.consulta_bem_estar_user(cursor, id_user)
+            elif opcao == '2':
+                dados = consultas.consulta_progresso_trilhas_user(cursor, id_user)
+            elif opcao == '3':
+                dados = consultas.consulta_recomendacoes_user(cursor, id_user)
+            if _pretty_print(dados) is False:
+                continue
+            export = (
+                ColorMsg.input_prompt('Exportar resultado para JSON? (s/n): ')
+                .strip()
+                .lower()
+            )
+            if export in ('s', 'sim', 'y', 'yes'):
+                nome_arquivo = ColorMsg.input_prompt(
+                    'Nome do arquivo (ex: painel_user.json): '
+                ).strip()
+                pasta_data = os.path.join(os.path.dirname(__file__), '..', 'data')
+                pasta_data = os.path.abspath(pasta_data)
+                os.makedirs(pasta_data, exist_ok=True)
+                caminho_arquivo = os.path.join(pasta_data, nome_arquivo)
+                with open(caminho_arquivo, 'w', encoding='utf-8') as f:
+                    json.dump(
+                        dados, f, ensure_ascii=False, indent=2, default=_json_serializer
+                    )
+                ColorMsg.print_success(f'✓ Exportado para {caminho_arquivo}')
+        continue

@@ -145,7 +145,7 @@ def get_usuario_por_id(id_usuario: int, conn_info: Dict = None) -> Optional[Dict
             """
             SELECT id_usuario, id_empresa, nome_completo, email, senha_hash,
                    nivel_carreira, ocupacao, genero, data_nascimento,
-                   TO_CHAR(data_cadastro, 'YYYY-MM-DD"T"HH24:MI:SS') AS data_cadastro,
+                       TO_CHAR(data_cadastro, 'YYYY-MM-DD"T"HH24:MI:SS') AS data_cadastro,
                    is_admin
             FROM usuarios
             WHERE id_usuario = :1
@@ -170,7 +170,7 @@ def list_usuarios(conn_info: Dict = None) -> List[Dict]:
             """
             SELECT id_usuario, id_empresa, nome_completo, email, senha_hash,
                    nivel_carreira, ocupacao, genero, data_nascimento,
-                   TO_CHAR(data_cadastro, 'YYYY-MM-DD"T"HH24:MI:SS TZH:TZM') AS data_cadastro,
+                       TO_CHAR(data_cadastro, 'YYYY-MM-DD"T"HH24:MI:SS') AS data_cadastro,
                    is_admin
             FROM usuarios
             ORDER BY id_usuario

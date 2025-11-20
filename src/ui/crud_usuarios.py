@@ -49,12 +49,39 @@ def criar_usuario():
         ColorMsg.print_title('CADASTRO DE NOVO USUÁRIO')
         ColorMsg.print_title('=' * 60)
 
-        # ID da empresa (opcional)
-        id_empresa_str = ColorMsg.input_prompt(
-            'ID da empresa (opcional, Enter para pular): '
-        ).strip()
-        id_empresa, id_empresa_error = validate_id(id_empresa_str, 'ID da empresa')
-        if id_empresa_error or id_empresa is None:
+        # Listar empresas diretamente do banco
+        try:
+            from src.services.DAO import _connect
+            conn = _connect()
+            cur = conn.cursor()
+            cur.execute("SELECT id_empresa, nome_empresa FROM empresas ORDER BY id_empresa")
+            empresas = cur.fetchall()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            empresas = []
+            ColorMsg.print_error(f'Erro ao buscar empresas: {e}')
+
+        if empresas:
+            ColorMsg.print_info('\nEmpresas disponíveis:')
+            for eid, nome in empresas:
+                ColorMsg.print_info(f'  {eid} - {nome}')
+            empresa_ids = [e[0] for e in empresas]
+            while True:
+                id_empresa_str = ColorMsg.input_prompt('ID da empresa (opcional, Enter para pular): ').strip()
+                if not id_empresa_str:
+                    id_empresa = None
+                    break
+                id_empresa, id_empresa_error = validate_id(id_empresa_str, 'ID da empresa')
+                if id_empresa_error or id_empresa is None:
+                    ColorMsg.print_error(f'✗ {id_empresa_error or "ID inválido"}')
+                    continue
+                if id_empresa not in empresa_ids:
+                    ColorMsg.print_error('✗ ID de empresa inválido. Tente novamente ou pressione Enter para pular.')
+                    continue
+                break
+        else:
+            ColorMsg.print_warning('Nenhuma empresa cadastrada. Usuário será criado sem vínculo.')
             id_empresa = None
 
         # Nome completo
@@ -68,15 +95,16 @@ def criar_usuario():
         if not success:
             return
 
-        # Email
-        email, success = _input_with_validation('Email: ', validate_email)
-        if not success:
-            return
-
-        # Verifica duplicidade de email
-        if db.email_existe(email):
-            ColorMsg.print_error('✗ Email já cadastrado.')
-            return
+        # Email (repetir até válido e não duplicado)
+        while True:
+            email, email_err = validate_email(ColorMsg.input_prompt('Email: '))
+            if email_err:
+                ColorMsg.print_error(f'✗ {email_err}')
+                continue
+            if db.email_existe(email):
+                ColorMsg.print_error('✗ Email já cadastrado.')
+                continue
+            break
 
         # Senha
         senha = ColorMsg.input_prompt('Senha: ').strip()
@@ -115,14 +143,14 @@ def criar_usuario():
             default='Não especificado',
         )
 
-        # Data de nascimento (mascara BR DD/MM/YYYY)
+        # Data de nascimento (obrigatória, DD/MM/YYYY)
         while True:
             dn_input = input_date_mask(
                 ColorMsg.INPUT
-                + 'Data de nascimento (DD/MM/YYYY, opcional): '
+                + 'Data de nascimento (DD/MM/YYYY, obrigatório): '
                 + ColorMsg.RESET
             ).strip()
-            dn_val, dn_err = validate_date(dn_input, required=False)
+            dn_val, dn_err = validate_date(dn_input, required=True)
             if dn_err:
                 ColorMsg.print_error(f'✗ {dn_err}')
                 continue

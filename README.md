@@ -139,6 +139,10 @@ O sistema oferece pelo menos 3 consultas relevantes ao banco Oracle, com opção
 - Média de bem-estar da empresa
 - Evolução do bem-estar do usuário
 
+## ℹ️ Dica para Querries Corporativas
+
+Para as querries corporativas (painel da empresa), a empresa de ID **3** (`EduPro`) costuma apresentar os melhores resultados e serve como referência para testes e demonstrações.
+
 ## 📁 Estrutura do Projeto
 
 ```
