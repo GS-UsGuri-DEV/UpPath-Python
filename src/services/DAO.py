@@ -1,20 +1,3 @@
-from typing import Dict
-
-
-def list_empresas(conn_info: Dict = None):
-    """Retorna lista de empresas (id_empresa, nome_empresa)."""
-    conn = _connect(conn_info)
-    cur = conn.cursor()
-    try:
-        cur.execute("SELECT id_empresa, nome_empresa FROM empresas ORDER BY id_empresa")
-        empresas = cur.fetchall()
-        return empresas
-    except Exception as e:
-        logging.error(f'Erro ao listar empresas: {e}')
-        return []
-    finally:
-        cur.close()
-        conn.close()
 """
 Camada para sincronizar usuários com banco Oracle e executar consultas.
 """
@@ -320,6 +303,22 @@ def get_cursor(conn_info: Dict = None):
     cur = conn.cursor()
     try:
         yield cur
+    finally:
+        cur.close()
+        conn.close()
+
+
+def list_empresas(conn_info: Dict = None):
+    """Retorna lista de empresas (id_empresa, nome_empresa)."""
+    conn = _connect(conn_info)
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT id_empresa, nome_empresa FROM empresas ORDER BY id_empresa")
+        empresas = cur.fetchall()
+        return empresas
+    except Exception as e:
+        logging.error(f'Erro ao listar empresas: {e}')
+        return []
     finally:
         cur.close()
         conn.close()
